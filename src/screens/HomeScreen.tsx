@@ -31,6 +31,7 @@ type RootStackParamList = {
   Meditation: undefined;
   TherapyCompanion: undefined;
   Subscription: undefined;
+  AnxietySupport: undefined;
 };
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -224,6 +225,11 @@ export default function HomeScreen() {
             <Icon name="sparkles-outline" size={22} color="#fbbf24" />
             <Text style={styles.toolTitle}>Wellbeing Plus</Text>
             <Text style={styles.toolText}>Plans from £4.99</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('AnxietySupport')}>
+            <Icon name="shield-outline" size={22} color="#93c5fd" />
+            <Text style={styles.toolTitle}>Anxiety support</Text>
+            <Text style={styles.toolText}>Reset and choose a next step</Text>
           </TouchableOpacity>
         </View>
       </View>

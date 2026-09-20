@@ -21,6 +21,7 @@ import PlannerScreen from '../screens/PlannerScreen';
 import MeditationScreen from '../screens/MeditationScreen';
 import TherapyCompanionScreen from '../screens/TherapyCompanionScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
+import AnxietySupportScreen from '../screens/AnxietySupportScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -45,6 +46,7 @@ const HomeStack = () => (
     <Stack.Screen name="Meditation" component={MeditationScreen} />
     <Stack.Screen name="TherapyCompanion" component={TherapyCompanionScreen} />
     <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+    <Stack.Screen name="AnxietySupport" component={AnxietySupportScreen} />
   </Stack.Navigator>
 );
 
