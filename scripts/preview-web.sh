@@ -9,6 +9,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 step() { printf '\n\033[1;32m==> %s\033[0m\n' "$1"; }
 
+# Use the port Replit maps to the public preview URL (externalPort = 80 in .replit).
+if [ -z "${PORT:-}" ] && [ -f .replit ]; then
+  PORT=$(awk '/^\[\[ports\]\]/{lp=""} /localPort/{gsub(/[^0-9]/,"");lp=$0} /externalPort *= *80$/{if(lp!=""){print lp; exit}}' .replit)
+fi
 PORT="${PORT:-3000}"
 if [ -n "${REPLIT_DEV_DOMAIN:-}" ]; then
   URL="https://$REPLIT_DEV_DOMAIN"
@@ -16,7 +20,15 @@ else
   URL="http://localhost:$PORT"
 fi
 
-[ -n "${ANTHROPIC_API_KEY:-}" ] || echo "Note: ANTHROPIC_API_KEY is not set, so the coach will say it is unavailable. Add it in Tools → Secrets."
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  echo "Note: ANTHROPIC_API_KEY is not set, so the coach will say it is unavailable."
+  echo "      Add a secret named exactly ANTHROPIC_API_KEY in Tools → Secrets, then open a NEW Shell tab and re-run."
+fi
+
+if (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then
+  echo "Port $PORT is already in use (probably the old preview). Press Stop in Replit, or run:  pkill -f 'expo start'"
+  exit 1
+fi
 
 step "Installing app and server dependencies"
 npm ci --no-audit --no-fund

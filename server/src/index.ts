@@ -87,4 +87,12 @@ if (process.env.WEB_DIST) {
 setInterval(() => pruneQuotas(), 60 * 60 * 1000).unref();
 
 const port = Number(process.env.PORT ?? 3000);
-app.listen(port, '0.0.0.0', () => console.log(`Wellbeing coach listening on :${port} using ${MODEL}`));
+// Express 5 passes listen errors (e.g. port already in use) to this callback.
+app.listen(port, '0.0.0.0', (error?: Error) => {
+  if (error) {
+    console.error(`Could not start on port ${port}: ${error.message}`);
+    console.error('Another program is using this port. Press Stop in Replit (or run: pkill -f expo) and try again.');
+    process.exit(1);
+  }
+  console.log(`Wellbeing coach listening on :${port} using ${MODEL}`);
+});
