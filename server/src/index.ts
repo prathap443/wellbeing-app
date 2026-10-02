@@ -1,13 +1,12 @@
+import path from 'node:path';
 import express, { type Request, type Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODEL, answerQuestion, suggestQuestions } from './coach.js';
 import { cleanText, parseContext, parseHistory, parseProfile } from './profile.js';
 import { FREE_DAILY_QUESTIONS, pruneQuotas, questionsRemaining, refundQuestion, takeQuestion, takeSuggestionRefresh } from './quota.js';
 
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.error('ANTHROPIC_API_KEY is not set. Add it in Replit → Secrets.');
-  process.exit(1);
-}
+const HAS_KEY = !!process.env.ANTHROPIC_API_KEY;
+if (!HAS_KEY) console.warn('ANTHROPIC_API_KEY is not set (Replit → Secrets). Coach endpoints will return 503.');
 
 const app = express();
 app.set('trust proxy', true); // Replit sits behind a proxy; needed for req.ip
@@ -26,7 +25,12 @@ const logError = (route: string, err: unknown) => {
 };
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, model: MODEL, freeDailyQuestions: FREE_DAILY_QUESTIONS });
+  res.json({ ok: true, coach: HAS_KEY, model: MODEL, freeDailyQuestions: FREE_DAILY_QUESTIONS });
+});
+
+app.use('/coach', (_req, res, next) => {
+  if (HAS_KEY) next();
+  else res.status(503).json({ error: 'coach_unavailable' });
 });
 
 app.post('/coach/suggestions', async (req: Request, res: Response) => {
@@ -72,6 +76,13 @@ app.post('/coach/ask', async (req: Request, res: Response) => {
     res.status(502).json({ error: 'coach_unavailable', remaining: questionsRemaining(deviceId) });
   }
 });
+
+// Browser preview: serve the exported web app from the same origin (see scripts/preview-web.sh).
+if (process.env.WEB_DIST) {
+  const dist = path.resolve(process.env.WEB_DIST);
+  app.use(express.static(dist));
+  app.use((req, res, next) => (req.method === 'GET' ? res.sendFile(path.join(dist, 'index.html')) : next()));
+}
 
 setInterval(() => pruneQuotas(), 60 * 60 * 1000).unref();
 

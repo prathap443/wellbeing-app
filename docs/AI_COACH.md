@@ -7,6 +7,12 @@
 - **Privacy:** only quiz choices, an optional first name, mood labels and check-in scores are sent. Notes, journal entries and contacts never leave the phone. The server logs no request bodies.
 - **Model:** `claude-opus-5-5` by default. Set the `COACH_MODEL` secret to `claude-haiku-4-5` (what NutriEat uses) for lower cost per question.
 
+## Preview in the browser
+```bash
+bash scripts/preview-web.sh
+```
+Builds the web version and serves it together with the coach on one URL (open the Webview tab). Pop-up alerts, reminders, Face ID and phone calls only work on a real phone.
+
 ## Deploy on Replit
 1. In your Wellbeing Repl, open **Tools → Secrets** and add `ANTHROPIC_API_KEY` (you can reuse the NutriEat key, or create a separate one so you can see each app's usage).
 2. In the Shell:

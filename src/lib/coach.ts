@@ -3,7 +3,8 @@ import Constants from 'expo-constants';
 import { calculateStreaks, parseEntryDate } from './dates';
 
 // Set "extra.coachApiUrl" in app.json to your deployed Replit URL.
-const API_URL: string = (Constants.expoConfig?.extra?.coachApiUrl ?? '').replace(/\/$/, '');
+// EXPO_PUBLIC_COACH_API_URL overrides it for local/browser previews.
+const API_URL: string = (process.env.EXPO_PUBLIC_COACH_API_URL || Constants.expoConfig?.extra?.coachApiUrl || '').replace(/\/$/, '');
 
 export const COACH_PROFILE_KEY = 'coach_profile';
 export const COACH_CONSENT_KEY = 'coach_consent';
@@ -44,7 +45,7 @@ export class CoachError extends Error {
   }
 }
 
-export const isCoachConfigured = () => API_URL.startsWith('https://');
+export const isCoachConfigured = () => API_URL.startsWith('https://') || API_URL.startsWith('http://localhost');
 
 const todayKey = () => new Date().toLocaleDateString();
 
