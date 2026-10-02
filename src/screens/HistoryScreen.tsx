@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { parseEntryDate } from '../lib/dates';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
@@ -19,6 +20,7 @@ interface MoodEntry {
   mood: string;
   note: string;
   date: string;
+  timestamp?: string;
 }
 
 const MOOD_OPTIONS = [
@@ -54,22 +56,21 @@ export default function HistoryScreen() {
   const [filter, setFilter] = useState<'all' | 'week' | 'month'>('all');
 
   useEffect(() => {
-    loadEntries();
-  }, []);
+    // Tabs stay mounted, so reload on focus to pick up entries logged elsewhere.
+    return navigation.addListener('focus', loadEntries);
+  }, [navigation]);
 
   const loadEntries = async () => {
     try {
       const stored = await AsyncStorage.getItem('mood_entries');
-      if (stored) {
-        setEntries(JSON.parse(stored));
-      }
+      setEntries(stored ? JSON.parse(stored) : []);
     } catch (e) {
       console.error('Failed to load entries', e);
     }
   };
 
   const filteredEntries = entries.filter(e => {
-    const entryDate = new Date(e.date);
+    const entryDate = parseEntryDate(e);
     const now = new Date();
     if (filter === 'week') {
       const weekAgo = new Date(now);
@@ -158,7 +159,7 @@ export default function HistoryScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: '#0f172a',
     paddingBottom: 40,
   },

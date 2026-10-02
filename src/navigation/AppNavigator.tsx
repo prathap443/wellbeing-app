@@ -1,7 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, NavigationContainer } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -20,63 +21,80 @@ import GoalsScreen from '../screens/GoalsScreen';
 import PlannerScreen from '../screens/PlannerScreen';
 import MeditationScreen from '../screens/MeditationScreen';
 import TherapyCompanionScreen from '../screens/TherapyCompanionScreen';
-import SubscriptionScreen from '../screens/SubscriptionScreen';
 import AnxietySupportScreen from '../screens/AnxietySupportScreen';
+import PrivacyScreen from '../screens/PrivacyScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const BACKGROUND = '#0f172a';
+
+// Sub-screens get a native header with a back button; tab roots have no
+// header, so pad them below the status bar / Dynamic Island instead.
+const stackOptions = {
+  headerShown: true,
+  headerStyle: { backgroundColor: BACKGROUND },
+  headerTintColor: '#f8fafc',
+  headerShadowVisible: false,
+  headerBackButtonDisplayMode: 'minimal' as const,
+  contentStyle: { backgroundColor: BACKGROUND },
+};
+
+const rootOptions = {
+  headerShown: false,
+  layout: ({ children }: { children: React.ReactNode }) => (
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BACKGROUND }}>{children}</SafeAreaView>
+  ),
+};
+
+const theme = {
+  ...DarkTheme,
+  colors: { ...DarkTheme.colors, background: BACKGROUND, card: '#1e293b', primary: '#10b981' },
+};
+
 const HomeStack = () => (
   <Stack.Navigator
-    screenOptions={{
-      headerShown: false,
-    }}
+    screenOptions={stackOptions}
   >
-    <Stack.Screen name="Home" component={HomeScreen} />
-    <Stack.Screen name="CheckIn" component={CheckInScreen} />
-    <Stack.Screen name="Journal" component={JournalScreen} />
-    <Stack.Screen name="Breathe" component={BreatheScreen} />
-    <Stack.Screen name="Resources" component={ResourcesScreen} />
-    <Stack.Screen name="Grounding" component={GroundingScreen} />
-    <Stack.Screen name="ReachOut" component={ReachOutScreen} />
-    <Stack.Screen name="SleepReset" component={SleepResetScreen} />
-    <Stack.Screen name="SupportGuidance" component={SupportGuidanceScreen} />
-    <Stack.Screen name="Goals" component={GoalsScreen} />
-    <Stack.Screen name="Planner" component={PlannerScreen} />
-    <Stack.Screen name="Meditation" component={MeditationScreen} />
-    <Stack.Screen name="TherapyCompanion" component={TherapyCompanionScreen} />
-    <Stack.Screen name="Subscription" component={SubscriptionScreen} />
-    <Stack.Screen name="AnxietySupport" component={AnxietySupportScreen} />
+    <Stack.Screen name="Home" component={HomeScreen} options={rootOptions} />
+    <Stack.Screen name="CheckIn" component={CheckInScreen} options={{ title: 'Check-in' }} />
+    <Stack.Screen name="Journal" component={JournalScreen} options={{ title: 'Journal' }} />
+    <Stack.Screen name="Breathe" component={BreatheScreen} options={{ title: 'Breathe' }} />
+    <Stack.Screen name="Resources" component={ResourcesScreen} options={{ title: 'Tools and support' }} />
+    <Stack.Screen name="Grounding" component={GroundingScreen} options={{ title: 'Grounding' }} />
+    <Stack.Screen name="ReachOut" component={ReachOutScreen} options={{ title: 'Reach out' }} />
+    <Stack.Screen name="SleepReset" component={SleepResetScreen} options={{ title: 'Sleep reset' }} />
+    <Stack.Screen name="SupportGuidance" component={SupportGuidanceScreen} options={{ title: 'Get help now' }} />
+    <Stack.Screen name="Goals" component={GoalsScreen} options={{ title: 'Habits and goals' }} />
+    <Stack.Screen name="Planner" component={PlannerScreen} options={{ title: 'Planner' }} />
+    <Stack.Screen name="Meditation" component={MeditationScreen} options={{ title: 'Meditation' }} />
+    <Stack.Screen name="TherapyCompanion" component={TherapyCompanionScreen} options={{ title: 'Therapy companion' }} />
+    <Stack.Screen name="AnxietySupport" component={AnxietySupportScreen} options={{ title: 'Anxiety support' }} />
   </Stack.Navigator>
 );
 
 const HistoryStack = () => (
   <Stack.Navigator
-    screenOptions={{
-      headerShown: false,
-    }}
+    screenOptions={stackOptions}
   >
-    <Stack.Screen name="History" component={HistoryScreen} />
+    <Stack.Screen name="History" component={HistoryScreen} options={rootOptions} />
   </Stack.Navigator>
 );
 
 const InsightsStack = () => (
   <Stack.Navigator
-    screenOptions={{
-      headerShown: false,
-    }}
+    screenOptions={stackOptions}
   >
-    <Stack.Screen name="Insights" component={InsightsScreen} />
+    <Stack.Screen name="Insights" component={InsightsScreen} options={rootOptions} />
   </Stack.Navigator>
 );
 
 const SettingsStack = () => (
   <Stack.Navigator
-    screenOptions={{
-      headerShown: false,
-    }}
+    screenOptions={stackOptions}
   >
-    <Stack.Screen name="Settings" component={SettingsScreen} />
+    <Stack.Screen name="Settings" component={SettingsScreen} options={rootOptions} />
+    <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy Policy' }} />
   </Stack.Navigator>
 );
 
@@ -90,14 +108,13 @@ const TabNavigator = () => (
         Settings: 'settings-outline',
       };
       return {
+        headerShown: false,
         tabBarActiveTintColor: '#10b981',
         tabBarInactiveTintColor: '#64748b',
         tabBarStyle: {
           backgroundColor: '#1e293b',
           borderTopWidth: 1,
           borderTopColor: '#334155',
-          height: 70,
-          paddingBottom: 10,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -147,7 +164,7 @@ const TabNavigator = () => (
 
 export default function AppNavigator() {
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={theme}>
       <TabNavigator />
     </NavigationContainer>
   );

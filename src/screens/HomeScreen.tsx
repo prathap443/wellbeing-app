@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons as Icon } from '@expo/vector-icons';
+import { calculateStreaks } from '../lib/dates';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -30,7 +31,7 @@ type RootStackParamList = {
   Planner: undefined;
   Meditation: undefined;
   TherapyCompanion: undefined;
-  Subscription: undefined;
+  SupportGuidance: undefined;
   AnxietySupport: undefined;
 };
 
@@ -47,6 +48,7 @@ interface MoodEntry {
   mood: string;
   note: string;
   date: string;
+  timestamp?: string;
 }
 
 const MOOD_OPTIONS: MoodOption[] = [
@@ -73,17 +75,17 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const todayEntries = savedEntries.filter((entry) => entry.date === new Date().toLocaleDateString()).length;
+  const streak = calculateStreaks(savedEntries).current;
 
   useEffect(() => {
-    loadEntries();
-  }, []);
+    // Reload whenever the screen regains focus so changes elsewhere (e.g. clearing data) show up.
+    return navigation.addListener('focus', loadEntries);
+  }, [navigation]);
 
   const loadEntries = async () => {
     try {
       const stored = await AsyncStorage.getItem('mood_entries');
-      if (stored) {
-        setSavedEntries(JSON.parse(stored));
-      }
+      setSavedEntries(stored ? JSON.parse(stored) : []);
     } catch (e) {
       console.error('Failed to load entries', e);
     }
@@ -94,8 +96,8 @@ export default function HomeScreen() {
       Alert.alert('Select a mood', 'Please select how you are feeling');
       return;
     }
-    const entry = { mood, note: note || '', date: new Date().toLocaleDateString() };
-    const updated = [entry, ...savedEntries].slice(0, 30);
+    const entry = { mood, note: note || '', date: new Date().toLocaleDateString(), timestamp: new Date().toISOString() };
+    const updated = [entry, ...savedEntries].slice(0, 1000);
     await AsyncStorage.setItem('mood_entries', JSON.stringify(updated));
     setSavedEntries(updated);
     setMood(null);
@@ -120,7 +122,7 @@ export default function HomeScreen() {
         <View style={styles.heroOrbTwo} />
         <View style={styles.heroTopRow}>
           <View style={styles.brandPill}><Icon name="sparkles-outline" size={15} color="#bbf7d0" /><Text style={styles.brandText}>WELLBEING</Text></View>
-          <View style={styles.heroStatus}><View style={styles.statusDot} /><Text style={styles.heroStatusText}>Your private space</Text></View>
+          <TouchableOpacity style={styles.helpPill} onPress={() => navigation.navigate('SupportGuidance')} accessibilityRole="button" accessibilityLabel="Get help now"><Icon name="heart" size={13} color="#4c0519" /><Text style={styles.helpPillText}>Get help</Text></TouchableOpacity>
         </View>
         <Text style={styles.heroGreeting}>{greeting}</Text>
         <Text style={styles.heroTitle}>Make room for{`\n`}yourself today.</Text>
@@ -142,6 +144,9 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={`${m.id}-${idx}`}
               onPress={() => setMood(m.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`Mood: ${m.label}`}
+              accessibilityState={{ selected: mood === m.id }}
               style={[
                 styles.moodButton,
                 { backgroundColor: mood === m.id ? m.color : '#1e293b' },
@@ -221,11 +226,6 @@ export default function HomeScreen() {
             <Text style={styles.toolTitle}>Therapy companion</Text>
             <Text style={styles.toolText}>Prepare and follow through</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('Subscription')}>
-            <Icon name="sparkles-outline" size={22} color="#fbbf24" />
-            <Text style={styles.toolTitle}>Wellbeing Plus</Text>
-            <Text style={styles.toolText}>Plans from £4.99</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('AnxietySupport')}>
             <Icon name="shield-outline" size={22} color="#93c5fd" />
             <Text style={styles.toolTitle}>Anxiety support</Text>
@@ -247,8 +247,8 @@ export default function HomeScreen() {
           <Text style={styles.statLabel}>Today</Text>
         </View>
         <View style={styles.statItem}>
-          <Icon name="bonfire-outline" size={22} color="#f59e0b" />
-          <Text style={styles.statLabel}>Streak</Text>
+          <Text style={styles.statValue}>{streak}</Text>
+          <Text style={styles.statLabel}>Day streak</Text>
         </View>
       </View>
       
@@ -285,7 +285,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: '#0f172a',
     paddingBottom: 40,
   },
@@ -302,6 +302,7 @@ const styles = StyleSheet.create({
   heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.13)', borderRadius: 18, paddingHorizontal: 10, paddingVertical: 7 },
   brandText: { color: '#d1fae5', fontSize: 10, fontWeight: '800', letterSpacing: 1.1 },
+  helpPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fda4af', borderRadius: 18, paddingHorizontal: 11, paddingVertical: 7 }, helpPillText: { color: '#4c0519', fontSize: 12, fontWeight: '800' },
   heroStatus: { flexDirection: 'row', alignItems: 'center', gap: 6 }, statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#6ee7b7' }, heroStatusText: { color: '#ccfbf1', fontSize: 11 },
   heroGreeting: { color: '#99f6e4', fontSize: 14, fontWeight: '600', marginTop: 31 },
   heroTitle: { color: '#f0fdfa', fontSize: 31, fontWeight: '800', lineHeight: 37, marginTop: 6 },

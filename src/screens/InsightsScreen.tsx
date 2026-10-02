@@ -6,8 +6,10 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { calculateStreaks, parseEntryDate } from '../lib/dates';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -16,6 +18,7 @@ interface MoodEntry {
   mood: string;
   note: string;
   date: string;
+  timestamp?: string;
 }
 
 const MOOD_OPTIONS = [
@@ -52,6 +55,7 @@ const getMoodIcon = (moodId: string) => {
 const getMoodColor = (moodId: string) => MOOD_COLORS[moodId] || '#10b981';
 
 export default function InsightsScreen() {
+  const navigation = useNavigation();
   const [entries, setEntries] = useState<MoodEntry[]>([]);
   const [stats, setStats] = useState({
     total: 0,
@@ -63,17 +67,16 @@ export default function InsightsScreen() {
   });
 
   useEffect(() => {
-    loadEntries();
-  }, []);
+    // Tabs stay mounted, so reload on focus to pick up entries logged elsewhere.
+    return navigation.addListener('focus', loadEntries);
+  }, [navigation]);
 
   const loadEntries = async () => {
     try {
       const stored = await AsyncStorage.getItem('mood_entries');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setEntries(parsed);
-        calculateStats(parsed);
-      }
+      const parsed = stored ? JSON.parse(stored) : [];
+      setEntries(parsed);
+      calculateStats(parsed);
     } catch (e) {
       console.error('Failed to load entries', e);
     }
@@ -89,43 +92,12 @@ export default function InsightsScreen() {
     });
 
     // Calculate streaks
-    const dates = [...new Set(data.map(e => e.date))].sort().reverse();
-    let currentStreak = 0;
-    let bestStreak = 0;
-    let tempStreak = 0;
-    
-    const today = new Date().toLocaleDateString();
-    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
-    
-    if (dates[0] === today || dates[0] === yesterday) {
-      currentStreak = 1;
-      for (let i = 1; i < dates.length; i++) {
-        const prev = new Date(dates[i - 1]);
-        const curr = new Date(dates[i]);
-        const diff = Math.floor((prev.getTime() - curr.getTime()) / 86400000);
-        if (diff === 1) currentStreak++;
-        else break;
-      }
-    }
-    
-    // Best streak
-    tempStreak = 1;
-    for (let i = 1; i < dates.length; i++) {
-      const prev = new Date(dates[i - 1]);
-      const curr = new Date(dates[i]);
-      const diff = Math.floor((prev.getTime() - curr.getTime()) / 86400000);
-      if (diff === 1) {
-        tempStreak++;
-        bestStreak = Math.max(bestStreak, tempStreak);
-      } else {
-        tempStreak = 1;
-      }
-    }
+    const { current: currentStreak, best: bestStreak } = calculateStreaks(data);
 
     // Weekly average
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekEntries = data.filter(e => new Date(e.date) >= weekAgo);
+    const weekEntries = data.filter(e => parseEntryDate(e) >= weekAgo);
     const weekTotal = weekEntries.reduce((sum, e) => sum + (MOOD_VALUES[e.mood] || 3), 0);
     const weeklyAvg = weekEntries.length ? (weekTotal / weekEntries.length).toFixed(1) : '0.0';
 
@@ -242,7 +214,7 @@ export default function InsightsScreen() {
               {entries.filter(e => {
                 const weekAgo = new Date();
                 weekAgo.setDate(weekAgo.getDate() - 7);
-                return new Date(e.date) >= weekAgo;
+                return parseEntryDate(e) >= weekAgo;
               }).length}
             </Text>
             <Text style={styles.weekStatLabel}>Entries</Text>
@@ -255,7 +227,7 @@ export default function InsightsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: '#0f172a',
     paddingBottom: 40,
   },

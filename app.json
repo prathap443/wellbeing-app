@@ -1,17 +1,24 @@
 {
   "expo": {
-    "name": "wellbeing-app",
+    "name": "Wellbeing",
     "slug": "wellbeing-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0f172a",
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.prathap443.wellbeing",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.prathap443.wellbeing",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0f172a",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -22,7 +29,28 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#0f172a"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "mode": "production"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Wellbeing uses Face ID to keep your journal and mood history private."
+        }
+      ]
     ]
   }
 }
