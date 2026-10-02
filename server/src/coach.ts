@@ -5,7 +5,9 @@ import { TOOLS, type Context, type Profile, type Turn, describeUser } from './pr
 export const MODEL = process.env.COACH_MODEL || 'claude-haiku-4-5';
 const IS_HAIKU = MODEL.startsWith('claude-haiku');
 
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY
+// Reads ANTHROPIC_API_KEY. Keys created outside a workspace also need ANTHROPIC_WORKSPACE_ID (wrkspc_...).
+const WORKSPACE_ID = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
+const client = new Anthropic(WORKSPACE_ID ? { defaultHeaders: { 'anthropic-workspace-id': WORKSPACE_ID } } : {});
 
 // Frozen so it can be prompt-cached. Never interpolate per-user data here.
 const SYSTEM_PROMPT = `You are the Wellbeing Coach inside "Wellbeing", a private self-care app. You help people understand their mood and take small, practical steps. You are warm, plain-spoken and brief, and you use British English.
