@@ -1,8 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { TOOLS, type Context, type Profile, type Turn, describeUser } from './profile.js';
 
-// Defaults to Claude Opus 5.5. Set COACH_MODEL=claude-haiku-4-5 (what NutriEat uses) for lower cost.
-export const MODEL = process.env.COACH_MODEL ?? 'claude-opus-5-5';
+// Lowest-cost model by default. Set COACH_MODEL=claude-opus-5-5 for richer answers (about 4-8x the cost).
+export const MODEL = process.env.COACH_MODEL || 'claude-haiku-4-5';
 const IS_HAIKU = MODEL.startsWith('claude-haiku');
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY
@@ -72,6 +72,21 @@ export const REFUSAL_FALLBACK: CoachAnswer & { refunded: true } = {
   refunded: true,
 };
 
+// USD per million tokens (input, output); see https://www.anthropic.com/pricing
+const PRICES: Record<string, [number, number]> = {
+  'claude-haiku-4-5': [1, 5],
+  'claude-sonnet-5-5': [2, 10],
+  'claude-opus-5-5': [4, 20],
+};
+
+/** Logs token counts and estimated cost only; never content. */
+function logUsage(usage: { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null }) {
+  const [inPrice, outPrice] = PRICES[MODEL] ?? [0, 0];
+  const input = usage.input_tokens + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0);
+  const cost = (input * inPrice + usage.output_tokens * outPrice) / 1_000_000;
+  console.log(`usage: ${input} in / ${usage.output_tokens} out ≈ $${cost.toFixed(4)}`);
+}
+
 async function callClaude(userContent: string, schema: Record<string, unknown>, effort: 'low' | 'medium') {
   const response = await client.beta.messages.create({
     model: MODEL,
@@ -88,6 +103,7 @@ async function callClaude(userContent: string, schema: Record<string, unknown>, 
         }),
   });
 
+  logUsage(response.usage);
   if (response.stop_reason === 'refusal') return { refused: true as const };
   const text = response.content.find((b) => b.type === 'text');
   if (!text || text.type !== 'text') throw new Error(`No text in response (stop_reason=${response.stop_reason})`);

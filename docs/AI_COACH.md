@@ -5,7 +5,7 @@
 - **Free tier:** 5 questions per device per day (UTC). Suggestions don't count; refreshing them is capped at 6 times a day.
 - **Safety:** every answer carries a `safety` flag. `concern` shows a "talk to a GP" card, `crisis` shows a prominent card that opens the crisis lines. Inputs are validated against fixed option lists, so the public endpoint can't be used as a general chatbot.
 - **Privacy:** only quiz choices, an optional first name, mood labels and check-in scores are sent. Notes, journal entries and contacts never leave the phone. The server logs no request bodies.
-- **Model:** `claude-opus-5-5` by default. Set the `COACH_MODEL` secret to `claude-haiku-4-5` (what NutriEat uses) for lower cost per question.
+- **Model:** `claude-haiku-4-5` (lowest cost, about $0.003 per answer) by default. Set the `COACH_MODEL` secret to `claude-opus-5-5` for richer answers at several times the cost. Each request logs its token count and estimated cost in the server output.
 
 ## Preview in the browser
 ```bash
