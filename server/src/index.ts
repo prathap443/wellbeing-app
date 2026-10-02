@@ -20,7 +20,8 @@ const deviceIdOf = (req: Request): string | null => {
 
 // Never log request bodies: they contain personal wellbeing data.
 const logError = (route: string, err: unknown) => {
-  if (err instanceof Anthropic.APIError) console.error(`${route}: Anthropic ${err.status} ${err.name}`);
+  // Anthropic error messages describe the request problem, not the user's content.
+  if (err instanceof Anthropic.APIError) console.error(`${route}: Anthropic ${err.status ?? 'connection'} ${err.name}: ${err.message.slice(0, 300)}`);
   else console.error(`${route}: ${(err as Error)?.message ?? err}`);
 };
 
