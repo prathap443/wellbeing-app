@@ -55,19 +55,33 @@ Sign in with your Apple ID when EAS asks and let it create the certificates. The
 > • Optional Face ID lock
 > • Export or delete your data at any time
 >
+> YOUR AI COACH
+> • Questions picked for your personality and how you've been feeling
+> • Warm, practical guidance and the right tool for the moment
+> • 5 free questions every day
+>
 > Wellbeing supports self-care and is not a medical device. It does not diagnose or treat any condition. If you are in danger, contact your local emergency services.
 
 **Keywords** (100 chars max)
 `mood,tracker,journal,anxiety,mental health,meditation,breathing,calm,self care,stress,sleep,diary`
 
 ## 4. App Privacy questionnaire
-Choose **"Data Not Collected"**. Everything stays on the device and nothing is sent to you or third parties.
+**Without the AI coach** (`extra.coachApiUrl` empty in app.json): choose **"Data Not Collected"**.
+
+**With the AI coach enabled**, declare:
+| Data type | Used for | Linked to user? | Tracking? |
+|---|---|---|---|
+| Health & Fitness → Health (mood ratings, check-in scores) | App Functionality | No | No |
+| User Content → Other User Content (quiz choices, tapped questions) | App Functionality | No | No |
+| Identifiers → Device ID (random per-install ID for the daily limit) | App Functionality | No | No |
+
+Apple also requires (guideline 5.1.2(i)) that the app names the third-party AI provider and gets consent before sending data. The coach's consent screen does this.
 
 ## 5. Screenshots
 Required: a 6.9" iPhone set (1320×2868) and, because iPad is supported, a 13" iPad set (2064×2752). Take them in the iOS Simulator or with TestFlight on a device: Home, Check-in, Insights, Breathe, Get help now.
 
 ## 6. Notes for App Review
-> Wellbeing is a self-care app; all data is stored locally with no account or login required. The "Get help" button on the Home screen opens crisis-line numbers for several countries. The app includes a clear disclaimer at first launch and in Settings that it is not a medical device. No in-app purchases in this version.
+> Wellbeing is a self-care app; all data is stored locally with no account or login required. The optional AI coach (Home → Your AI coach) shows a consent screen naming Anthropic as the AI provider before any data is sent. Users cannot type free text to the coach; they tap suggested questions. The coach is instructed not to diagnose or give medication advice, flags crisis situations, and links to crisis lines. Free users get 5 coach questions a day. The "Get help" button on the Home screen opens crisis-line numbers for several countries. The app includes a clear disclaimer at first launch and in Settings that it is not a medical device. No in-app purchases in this version.
 
 ## 7. Later: subscriptions (Wellbeing Plus)
 The placeholder paywall was removed because Apple rejects price screens that cannot take payment. To add it back properly: create auto-renewable subscriptions in App Store Connect, integrate RevenueCat (`react-native-purchases`), and include Restore Purchases, Terms of Use (EULA) and Privacy links on the paywall.

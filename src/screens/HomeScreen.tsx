@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { calculateStreaks } from '../lib/dates';
+import { isCoachConfigured } from '../lib/coach';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -32,6 +33,7 @@ type RootStackParamList = {
   Meditation: undefined;
   TherapyCompanion: undefined;
   SupportGuidance: undefined;
+  Coach: undefined;
   AnxietySupport: undefined;
 };
 
@@ -183,6 +185,17 @@ export default function HomeScreen() {
         <Text style={styles.buttonText}>Log My Mood</Text>
       </TouchableOpacity>
 
+      {isCoachConfigured() ? (
+        <TouchableOpacity style={styles.coachCard} onPress={() => navigation.navigate('Coach')} accessibilityRole="button">
+          <View style={styles.coachIcon}><Icon name="sparkles" size={22} color="#bbf7d0" /></View>
+          <View style={styles.coachBody}>
+            <Text style={styles.coachTitle}>Your AI coach</Text>
+            <Text style={styles.coachText}>Questions picked for how you're feeling today</Text>
+          </View>
+          <Icon name="chevron-forward-outline" size={20} color="#99f6e4" />
+        </TouchableOpacity>
+      ) : null}
+
       <View style={styles.toolsSection}>
         <Text style={styles.sectionTitle}>Wellbeing tools</Text>
         <View style={styles.toolGrid}>
@@ -302,6 +315,9 @@ const styles = StyleSheet.create({
   heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.13)', borderRadius: 18, paddingHorizontal: 10, paddingVertical: 7 },
   brandText: { color: '#d1fae5', fontSize: 10, fontWeight: '800', letterSpacing: 1.1 },
+  coachCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#134e4a', borderWidth: 1, borderColor: '#0f766e', borderRadius: 18, padding: 16, marginHorizontal: 20, marginTop: 22 },
+  coachIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#0f766e', alignItems: 'center', justifyContent: 'center' },
+  coachBody: { flex: 1 }, coachTitle: { color: '#f0fdfa', fontSize: 16, fontWeight: '800' }, coachText: { color: '#99f6e4', fontSize: 12, marginTop: 3 },
   helpPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fda4af', borderRadius: 18, paddingHorizontal: 11, paddingVertical: 7 }, helpPillText: { color: '#4c0519', fontSize: 12, fontWeight: '800' },
   heroStatus: { flexDirection: 'row', alignItems: 'center', gap: 6 }, statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#6ee7b7' }, heroStatusText: { color: '#ccfbf1', fontSize: 11 },
   heroGreeting: { color: '#99f6e4', fontSize: 14, fontWeight: '600', marginTop: 31 },

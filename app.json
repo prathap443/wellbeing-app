@@ -51,6 +51,9 @@
           "faceIDPermission": "Wellbeing uses Face ID to keep your journal and mood history private."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "coachApiUrl": ""
+    }
   }
 }

@@ -23,6 +23,7 @@ import MeditationScreen from '../screens/MeditationScreen';
 import TherapyCompanionScreen from '../screens/TherapyCompanionScreen';
 import AnxietySupportScreen from '../screens/AnxietySupportScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
+import CoachScreen from '../screens/CoachScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -70,6 +71,7 @@ const HomeStack = () => (
     <Stack.Screen name="Meditation" component={MeditationScreen} options={{ title: 'Meditation' }} />
     <Stack.Screen name="TherapyCompanion" component={TherapyCompanionScreen} options={{ title: 'Therapy companion' }} />
     <Stack.Screen name="AnxietySupport" component={AnxietySupportScreen} options={{ title: 'Anxiety support' }} />
+    <Stack.Screen name="Coach" component={CoachScreen} options={{ title: 'AI coach' }} />
   </Stack.Navigator>
 );
 

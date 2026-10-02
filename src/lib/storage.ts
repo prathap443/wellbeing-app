@@ -14,6 +14,9 @@ export const DATA_KEYS = [
   'sleep_reset_habits',
   'therapy_companion_plan',
   'trusted_contacts',
+  'coach_profile',
+  'coach_consent',
+  'coach_session',
 ] as const;
 
 export const SETTINGS_KEY = 'app_settings';
