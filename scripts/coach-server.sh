@@ -4,6 +4,7 @@
 #   bash scripts/coach-server.sh check            install, typecheck, unit tests
 #   bash scripts/coach-server.sh try              start locally and ask one real question (uses your API key)
 #   bash scripts/coach-server.sh set-url <URL>    point the app at your deployed server
+#   bash scripts/coach-server.sh set-rc-key <KEY> add the RevenueCat public iOS key (appl_...)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 step() { printf '\n\033[1;32m==> %s\033[0m\n' "$1"; }
@@ -55,6 +56,18 @@ case "${1:-}" in
     echo "Commit it:  git commit -am 'Point app at coach server' && git push"
     ;;
 
+  set-rc-key)
+    KEY="${2:-}"
+    if [[ ! "$KEY" =~ ^appl_ ]]; then echo "Usage: bash scripts/coach-server.sh set-rc-key appl_xxxxx  (RevenueCat → API keys → public iOS key)"; exit 1; fi
+    node -e '
+      const fs = require("fs");
+      const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
+      app.expo.extra = { ...(app.expo.extra || {}), revenueCatIosKey: process.argv[1] };
+      fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\n");
+    ' "$KEY"
+    echo "app.json now has the RevenueCat key. Commit it:  git commit -am 'Add RevenueCat key' && git push"
+    ;;
+
   *)
-    sed -n '2,7p' "$0"; exit 1 ;;
+    sed -n '2,8p' "$0"; exit 1 ;;
 esac

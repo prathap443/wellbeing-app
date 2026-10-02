@@ -17,6 +17,7 @@ export const DATA_KEYS = [
   'coach_profile',
   'coach_consent',
   'coach_session',
+  'account_prompt_seen',
 ] as const;
 
 export const SETTINGS_KEY = 'app_settings';

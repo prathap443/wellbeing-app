@@ -7,6 +7,8 @@ const SECTIONS = [
   ['What is stored', 'Mood entries, check-ins, journal reflections, plans, habits, meditation progress, trusted contacts and settings are saved only in this app’s private storage on your device.'],
   ['Who can see it', 'Only you. We have no servers and cannot access your entries. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.'],
   ['AI coach (optional)', 'If you agree to use the AI coach, the choices you made in its short quiz, an optional first name, your recent mood ratings and check-in scores, and the question you tap are sent to our coach server and to Anthropic, which provides the Claude AI model, to generate a reply. Your notes, journal entries and contacts are never sent. Our server does not store questions or answers or link them to you; it keeps only an anonymous per-install counter for the daily question limit. Anthropic processes requests under its commercial terms and may retain them for a limited period for safety and abuse monitoring; it does not use them to train models.'],
+  ['Account (optional)', 'If you create an account, we store your email address, optional first name and a securely hashed password on our server so you can sign in and keep Wellbeing Plus on your devices. Your moods, journal, check-ins and contacts are never uploaded. You can delete your account at any time in Settings → Account → Delete account.'],
+  ['Subscriptions', 'Wellbeing Plus is sold through the App Store. Apple processes payment; we never see your card details. We use RevenueCat to confirm your subscription status, which receives an anonymous app user ID (or your account ID if signed in) and your App Store purchase history.'],
   ['Notifications', 'Daily reminders are scheduled locally on your device. No push notification service receives your data.'],
   ['Sharing', 'Data leaves your device only when you choose to: for example using Export Data, sending a message to a trusted contact, or calling a helpline.'],
   ['Deleting your data', 'Use Settings → Clear All Data, or delete the app. Both permanently remove everything stored by Wellbeing on this device.'],
@@ -17,7 +19,7 @@ const SECTIONS = [
 
 export default function PrivacyScreen() {
   return <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.updated}>Last updated 2 October 2026 (AI coach added)</Text>
+    <Text style={styles.updated}>Last updated 2 October 2026</Text>
     {SECTIONS.map(([title, body]) => <React.Fragment key={title}><Text style={styles.heading}>{title}</Text><Text style={styles.body}>{body}</Text></React.Fragment>)}
   </ScrollView>;
 }

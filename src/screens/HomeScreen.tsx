@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { calculateStreaks } from '../lib/dates';
 import { isCoachConfigured } from '../lib/coach';
+import { useSession } from '../lib/session';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -34,6 +35,7 @@ type RootStackParamList = {
   TherapyCompanion: undefined;
   SupportGuidance: undefined;
   Coach: undefined;
+  Subscription: undefined;
   AnxietySupport: undefined;
 };
 
@@ -71,6 +73,7 @@ const MOOD_ICONS: Record<string, string> = {
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const { plus } = useSession();
   const [mood, setMood] = useState<string | null>(null);
   const [note, setNote] = useState<string>('');
   const [savedEntries, setSavedEntries] = useState<MoodEntry[]>([]);
@@ -238,6 +241,11 @@ export default function HomeScreen() {
             <Icon name="people-outline" size={22} color="#60a5fa" />
             <Text style={styles.toolTitle}>Therapy companion</Text>
             <Text style={styles.toolText}>Prepare and follow through</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('Subscription')}>
+            <Icon name="sparkles-outline" size={22} color="#fbbf24" />
+            <Text style={styles.toolTitle}>Wellbeing Plus</Text>
+            <Text style={styles.toolText}>{plus ? 'You are a member' : 'More coach time'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('AnxietySupport')}>
             <Icon name="shield-outline" size={22} color="#93c5fd" />

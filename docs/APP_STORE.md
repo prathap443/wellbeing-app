@@ -75,13 +75,21 @@ Sign in with your Apple ID when EAS asks and let it create the certificates. The
 | User Content → Other User Content (quiz choices, tapped questions) | App Functionality | No | No |
 | Identifiers → Device ID (random per-install ID for the daily limit) | App Functionality | No | No |
 
+**With accounts and Wellbeing Plus**, also declare:
+| Data type | Used for | Linked to user? | Tracking? |
+|---|---|---|---|
+| Contact Info → Email Address | App Functionality | Yes | No |
+| Contact Info → Name (optional first name) | App Functionality | Yes | No |
+| Identifiers → User ID | App Functionality | Yes | No |
+| Purchases → Purchase History (via RevenueCat) | App Functionality | Yes | No |
+
 Apple also requires (guideline 5.1.2(i)) that the app names the third-party AI provider and gets consent before sending data. The coach's consent screen does this.
 
 ## 5. Screenshots
 Required: a 6.9" iPhone set (1320×2868) and, because iPad is supported, a 13" iPad set (2064×2752). Take them in the iOS Simulator or with TestFlight on a device: Home, Check-in, Insights, Breathe, Get help now.
 
 ## 6. Notes for App Review
-> Wellbeing is a self-care app; all data is stored locally with no account or login required. The optional AI coach (Home → Your AI coach) shows a consent screen naming Anthropic as the AI provider before any data is sent. Users cannot type free text to the coach; they tap suggested questions. The coach is instructed not to diagnose or give medication advice, flags crisis situations, and links to crisis lines. Free users get 5 coach questions a day. The "Get help" button on the Home screen opens crisis-line numbers for several countries. The app includes a clear disclaimer at first launch and in Settings that it is not a medical device. No in-app purchases in this version.
+> Wellbeing is a self-care app; all data is stored locally with no account or login required. The optional AI coach (Home → Your AI coach) shows a consent screen naming Anthropic as the AI provider before any data is sent. Users cannot type free text to the coach; they tap suggested questions. The coach is instructed not to diagnose or give medication advice, flags crisis situations, and links to crisis lines. Free users get 5 coach questions a day; Wellbeing Plus subscribers get 30. Accounts are optional (Settings → Account) and can be deleted in-app. A sandbox tester account is not needed to review: all features except the higher coach limit work without purchase. The "Get help" button on the Home screen opens crisis-line numbers for several countries. The app includes a clear disclaimer at first launch and in Settings that it is not a medical device. No in-app purchases in this version.
 
-## 7. Later: subscriptions (Wellbeing Plus)
-The placeholder paywall was removed because Apple rejects price screens that cannot take payment. To add it back properly: create auto-renewable subscriptions in App Store Connect, integrate RevenueCat (`react-native-purchases`), and include Restore Purchases, Terms of Use (EULA) and Privacy links on the paywall.
+## 7. Subscriptions (Wellbeing Plus)
+See docs/SUBSCRIPTIONS.md. In App Store Connect, attach both subscriptions to the version you submit ("In-App Purchases and Subscriptions" section of the version page); first-time subscriptions are reviewed together with the app.

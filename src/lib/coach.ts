@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { calculateStreaks, parseEntryDate } from './dates';
+import { getAppUserId } from './purchases';
 
 // Set "extra.coachApiUrl" in app.json to your deployed Replit URL.
 // EXPO_PUBLIC_COACH_API_URL overrides it for local/browser previews.
-const API_URL: string = (process.env.EXPO_PUBLIC_COACH_API_URL || Constants.expoConfig?.extra?.coachApiUrl || '').replace(/\/$/, '');
+export const API_URL: string = (process.env.EXPO_PUBLIC_COACH_API_URL || Constants.expoConfig?.extra?.coachApiUrl || '').replace(/\/$/, '');
 
 export const COACH_PROFILE_KEY = 'coach_profile';
 export const COACH_CONSENT_KEY = 'coach_consent';
@@ -37,6 +38,8 @@ export type CoachSession = {
   suggestions: string[];
   turns: CoachTurn[];
   remaining: number;
+  /** Daily allowance reported by the server: higher for Plus subscribers. */
+  limit?: number;
 };
 
 export class CoachError extends Error {
@@ -84,11 +87,12 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T> 
   if (!isCoachConfigured()) throw new CoachError('not_configured');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
+  const rcUser = await getAppUserId();
   let response: Response;
   try {
     response = await fetch(`${API_URL}${path}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-device-id': await deviceId() },
+      headers: { 'content-type': 'application/json', 'x-device-id': await deviceId(), ...(rcUser ? { 'x-rc-user-id': rcUser } : {}) },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -112,16 +116,16 @@ export async function loadSession(): Promise<CoachSession> {
 
 export const saveSession = (session: CoachSession) => AsyncStorage.setItem(COACH_SESSION_KEY, JSON.stringify(session));
 
-export async function fetchSuggestions(profile: CoachProfile): Promise<{ questions: string[]; remaining: number }> {
+export async function fetchSuggestions(profile: CoachProfile): Promise<{ questions: string[]; remaining: number; limit: number }> {
   return post('/coach/suggestions', { profile, context: await buildContext() });
 }
 
-export async function askCoach(profile: CoachProfile, question: string, history: CoachTurn[]): Promise<CoachTurn & { remaining: number }> {
-  const data = await post<{ answer: string; follow_ups: string[]; suggested_tool: CoachTool; safety: CoachTurn['safety']; remaining: number }>('/coach/ask', {
+export async function askCoach(profile: CoachProfile, question: string, history: CoachTurn[]): Promise<CoachTurn & { remaining: number; limit: number }> {
+  const data = await post<{ answer: string; follow_ups: string[]; suggested_tool: CoachTool; safety: CoachTurn['safety']; remaining: number; limit: number }>('/coach/ask', {
     profile,
     question,
     context: await buildContext(),
     history: history.slice(-3).map((t) => ({ question: t.question, answer: t.answer })),
   });
-  return { question, answer: data.answer, followUps: data.follow_ups ?? [], tool: data.suggested_tool ?? 'none', safety: data.safety ?? 'none', remaining: data.remaining };
+  return { question, answer: data.answer, followUps: data.follow_ups ?? [], tool: data.suggested_tool ?? 'none', safety: data.safety ?? 'none', remaining: data.remaining, limit: data.limit };
 }

@@ -18,6 +18,12 @@ If you agree to use the AI coach, the following is sent to our coach server and 
 
 Your notes, journal entries and trusted contacts are **never** sent. Our server does not store questions or answers or link them to you; it keeps only an anonymous per-install counter to enforce the daily question limit. Anthropic processes requests under its commercial terms and may retain them for a limited period for safety and abuse monitoring; it does not use them to train its models. You can stop using the coach at any time; Settings → Clear All Data removes your coach profile and history from the device.
 
+## Account (optional)
+If you create an account, we store your email address, optional first name and a securely hashed password so you can sign in and keep Wellbeing Plus on your devices. Your moods, journal, check-ins and contacts are never uploaded. You can delete your account at any time in Settings → Account → Delete account, which permanently removes it from our server.
+
+## Subscriptions
+Wellbeing Plus is sold through the App Store. Apple processes payment; we never see your card details. We use RevenueCat (revenuecat.com) to confirm subscription status. RevenueCat receives an anonymous app user ID (or your account ID if you are signed in) and your App Store purchase history for this app.
+
 ## Notifications
 Daily reminders are scheduled locally on your device. No push notification service receives your data.
 

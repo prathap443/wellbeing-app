@@ -2,6 +2,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOp
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { useSession } from '../lib/session';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import {
   COACH_CONSENT_KEY, COACH_PROFILE_KEY, CoachError, CoachProfile, CoachSession, CoachTool, CoachTurn,
@@ -40,7 +41,7 @@ const TOOL_LINKS: Record<Exclude<CoachTool, 'none'>, { screen: string; label: st
 };
 
 const ERROR_TEXT: Record<CoachError['code'], string> = {
-  daily_limit: `You've used today's ${FREE_DAILY_QUESTIONS} free questions. Your coach will be ready again tomorrow.`,
+  daily_limit: "You've used today's questions. Your coach will be ready again tomorrow.",
   too_many_refreshes: 'You have refreshed your questions a lot today. Try one of the questions above.',
   offline: 'Could not reach your coach. Check your connection and try again.',
   unavailable: 'Your coach is having trouble right now. Please try again in a moment.',
@@ -49,6 +50,7 @@ const ERROR_TEXT: Record<CoachError['code'], string> = {
 
 export default function CoachScreen() {
   const navigation = useNavigation<any>();
+  const { plus } = useSession();
   const scrollRef = useRef<ScrollView>(null);
   const scrollToTurn = useRef<number | null>(null);
   const [ready, setReady] = useState(false);
@@ -78,8 +80,8 @@ export default function CoachScreen() {
     setLoading('suggestions');
     setError(null);
     try {
-      const { questions, remaining } = await fetchSuggestions(activeProfile);
-      await update({ ...current, suggestions: questions, remaining });
+      const { questions, remaining, limit } = await fetchSuggestions(activeProfile);
+      await update({ ...current, suggestions: questions, remaining, limit });
     } catch (e) {
       setError(ERROR_TEXT[(e as CoachError).code ?? 'unavailable']);
     } finally {
@@ -101,8 +103,8 @@ export default function CoachScreen() {
     setError(null);
     try {
       const turn = await askCoach(profile, question, session.turns);
-      const { remaining, ...rest } = turn;
-      await update({ ...session, turns: [...session.turns, rest], suggestions: session.suggestions.filter((q) => q !== question), remaining });
+      const { remaining, limit, ...rest } = turn;
+      await update({ ...session, turns: [...session.turns, rest], suggestions: session.suggestions.filter((q) => q !== question), remaining, limit });
       // Scroll to the new answer once it has been laid out (see onLayout below).
       scrollToTurn.current = session.turns.length;
     } catch (e) {
@@ -140,7 +142,8 @@ export default function CoachScreen() {
 
   if (!profile || editingProfile) return <Quiz initial={profile} onDone={saveProfile} onCancel={profile ? () => setEditingProfile(false) : undefined} />;
 
-  const remaining = session?.remaining ?? FREE_DAILY_QUESTIONS;
+  const limit = session?.limit ?? FREE_DAILY_QUESTIONS;
+  const remaining = session?.remaining ?? limit;
   const latest = session?.turns[session.turns.length - 1];
   const outOfQuestions = remaining <= 0;
 
@@ -155,7 +158,7 @@ export default function CoachScreen() {
     <View style={styles.headerRow}>
       <View style={styles.badge}><Icon name="sparkles" size={20} color="#bbf7d0" /></View>
       <View style={styles.headerText}><Text style={styles.heading}>{profile.name ? `Hi ${profile.name}` : 'Your coach'}</Text><Text style={styles.headerSub}>Questions picked for you</Text></View>
-      <View style={[styles.quota, outOfQuestions && styles.quotaEmpty]}><Text style={styles.quotaText}>{remaining}/{FREE_DAILY_QUESTIONS} left</Text></View>
+      <View style={[styles.quota, outOfQuestions && styles.quotaEmpty]}><Text style={styles.quotaText}>{remaining}/{limit} left</Text></View>
     </View>
 
     {session?.turns.map((turn, index) => <View key={`${turn.question}-${index}`} onLayout={(e) => {
@@ -190,6 +193,11 @@ export default function CoachScreen() {
 
     {error ? <View style={styles.errorCard}><Icon name="information-circle-outline" size={20} color="#fcd34d" /><Text style={styles.errorText}>{error}</Text></View> : null}
     {outOfQuestions && !error ? <View style={styles.errorCard}><Icon name="moon-outline" size={20} color="#fcd34d" /><Text style={styles.errorText}>{ERROR_TEXT.daily_limit}</Text></View> : null}
+    {outOfQuestions && !plus ? <TouchableOpacity style={styles.upsell} onPress={() => navigation.navigate('Subscription')} accessibilityRole="button">
+      <Icon name="sparkles" size={20} color="#422006" />
+      <View style={styles.upsellBody}><Text style={styles.upsellTitle}>Keep talking with Wellbeing Plus</Text><Text style={styles.upsellText}>Up to 30 coach questions every day.</Text></View>
+      <Icon name="chevron-forward-outline" size={18} color="#422006" />
+    </TouchableOpacity> : null}
 
     <TouchableOpacity style={styles.editLink} onPress={() => setEditingProfile(true)}><Icon name="options-outline" size={16} color="#94a3b8" /><Text style={styles.editText}>Update what I want help with</Text></TouchableOpacity>
     <View style={styles.footer}>
@@ -219,7 +227,7 @@ function Consent({ onAccept, onDecline }: { onAccept: () => void; onDecline: () 
       ['cloud-outline', 'What is shared', 'To answer, your choices, recent mood ratings and check-in scores are sent to our server and to Anthropic, who provide the Claude AI model. Your notes, journal and contacts are never sent.'],
       ['eye-off-outline', 'Not stored by us', 'We do not keep your questions or answers on our server or link them to you. Anthropic may keep requests for a limited time for safety.'],
       ['medkit-outline', 'Not a therapist', 'The coach is an AI. It can make mistakes and cannot provide crisis care or diagnosis.'],
-      ['gift-outline', `${FREE_DAILY_QUESTIONS} free questions a day`, 'Your daily allowance resets every day.'],
+      ['gift-outline', `${FREE_DAILY_QUESTIONS} free questions a day`, 'Your allowance resets daily. Wellbeing Plus members get up to 30.'],
     ].map(([icon, title, body]) => <View key={title} style={styles.point}><Icon name={icon as any} size={22} color="#34d399" /><View style={styles.pointBody}><Text style={styles.pointTitle}>{title}</Text><Text style={styles.pointText}>{body}</Text></View></View>)}
     <TouchableOpacity style={styles.primary} onPress={onAccept} accessibilityRole="button"><Text style={styles.primaryText}>Agree and continue</Text></TouchableOpacity>
     <TouchableOpacity style={styles.secondary} onPress={onDecline}><Text style={styles.secondaryText}>Not now</Text></TouchableOpacity>
@@ -296,6 +304,7 @@ const styles = StyleSheet.create({
   safetyBody: { flex: 1 }, safetyTitle: { color: '#ffe4e6', fontWeight: '800' }, safetyTitleCrisis: { color: '#4c0519' },
   safetyText: { color: '#fecdd3', fontSize: 13, lineHeight: 18, marginTop: 3 }, safetyTextCrisis: { color: '#4c0519' },
   errorCard: { flexDirection: 'row', gap: 10, backgroundColor: '#422006', borderRadius: 12, padding: 13, marginTop: 12 }, errorText: { color: '#fde68a', flex: 1, lineHeight: 19, fontSize: 13 },
+  upsell: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fbbf24', borderRadius: 14, padding: 14, marginTop: 12 }, upsellBody: { flex: 1 }, upsellTitle: { color: '#422006', fontWeight: '800' }, upsellText: { color: '#713f12', fontSize: 12, marginTop: 2 },
   editLink: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', marginTop: 26 }, editText: { color: '#94a3b8', fontSize: 13 },
   footer: { borderTopWidth: 1, borderTopColor: '#1e293b', marginTop: 20, paddingTop: 16, alignItems: 'center' },
   footerText: { color: '#64748b', fontSize: 12, textAlign: 'center', lineHeight: 17 }, footerLink: { color: '#fda4af', fontWeight: '700', marginTop: 8, fontSize: 13 },

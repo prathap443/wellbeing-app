@@ -16,11 +16,14 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { AppSettings, DEFAULT_SETTINGS, clearAllData, exportAllData, loadSettings, saveSettings } from '../lib/storage';
 import { disableDailyReminder, enableDailyReminder, formatHour } from '../lib/reminders';
+import { useSession } from '../lib/session';
+import { accountsAvailable } from '../lib/account';
 
 const REMINDER_HOURS = [8, 12, 18, 20, 22];
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
+  const { user, plus } = useSession();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
@@ -146,6 +149,23 @@ export default function SettingsScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Settings</Text>
         <Text style={styles.headerSubtitle}>Customize your experience</Text>
+      </View>
+
+      {/* Account and subscription */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+        {accountsAvailable() ? actionButton(
+          user ? (user.name || 'Your account') : 'Create account or sign in',
+          user ? user.email : 'Optional: keep Plus on all your devices',
+          'person-circle-outline',
+          () => navigation.navigate('Account')
+        ) : null}
+        {actionButton(
+          plus ? 'Wellbeing Plus: active' : 'Wellbeing Plus',
+          plus ? 'Manage your subscription' : '30 AI coach questions a day',
+          'sparkles-outline',
+          () => navigation.navigate('Subscription')
+        )}
       </View>
 
       {/* Preferences */}

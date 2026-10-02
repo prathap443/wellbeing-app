@@ -24,6 +24,8 @@ import TherapyCompanionScreen from '../screens/TherapyCompanionScreen';
 import AnxietySupportScreen from '../screens/AnxietySupportScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
 import CoachScreen from '../screens/CoachScreen';
+import SubscriptionScreen from '../screens/SubscriptionScreen';
+import AccountScreen from '../screens/AccountScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -72,6 +74,9 @@ const HomeStack = () => (
     <Stack.Screen name="TherapyCompanion" component={TherapyCompanionScreen} options={{ title: 'Therapy companion' }} />
     <Stack.Screen name="AnxietySupport" component={AnxietySupportScreen} options={{ title: 'Anxiety support' }} />
     <Stack.Screen name="Coach" component={CoachScreen} options={{ title: 'AI coach' }} />
+    <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Wellbeing Plus' }} />
+    <Stack.Screen name="Account" options={{ title: 'Account' }}>{() => <AccountScreen />}</Stack.Screen>
+    <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy Policy' }} />
   </Stack.Navigator>
 );
 
@@ -97,6 +102,8 @@ const SettingsStack = () => (
   >
     <Stack.Screen name="Settings" component={SettingsScreen} options={rootOptions} />
     <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy Policy' }} />
+    <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Wellbeing Plus' }} />
+    <Stack.Screen name="Account" options={{ title: 'Account' }}>{() => <AccountScreen />}</Stack.Screen>
   </Stack.Navigator>
 );
 

@@ -35,11 +35,11 @@ test('describeUser renders readable labels', () => {
 test('daily question limit, refunds and reset at midnight UTC', () => {
   resetQuotasForTests();
   const day1 = new Date('2026-10-02T10:00:00Z');
-  for (let i = 0; i < FREE_DAILY_QUESTIONS; i++) assert.equal(takeQuestion('device-aaaaaaaaaaaa', '1.1.1.1', day1), true);
-  assert.equal(takeQuestion('device-aaaaaaaaaaaa', '1.1.1.1', day1), false);
-  assert.equal(questionsRemaining('device-aaaaaaaaaaaa', day1), 0);
+  for (let i = 0; i < FREE_DAILY_QUESTIONS; i++) assert.equal(takeQuestion('device-aaaaaaaaaaaa', '1.1.1.1', FREE_DAILY_QUESTIONS, day1), true);
+  assert.equal(takeQuestion('device-aaaaaaaaaaaa', '1.1.1.1', FREE_DAILY_QUESTIONS, day1), false);
+  assert.equal(questionsRemaining('device-aaaaaaaaaaaa', FREE_DAILY_QUESTIONS, day1), 0);
   refundQuestion('device-aaaaaaaaaaaa', '1.1.1.1');
-  assert.equal(questionsRemaining('device-aaaaaaaaaaaa', day1), 1);
-  assert.equal(takeQuestion('device-bbbbbbbbbbbb', '1.1.1.1', day1), true, 'other devices unaffected');
-  assert.equal(questionsRemaining('device-aaaaaaaaaaaa', new Date('2026-10-03T00:01:00Z')), FREE_DAILY_QUESTIONS);
+  assert.equal(questionsRemaining('device-aaaaaaaaaaaa', FREE_DAILY_QUESTIONS, day1), 1);
+  assert.equal(takeQuestion('device-bbbbbbbbbbbb', '1.1.1.1', FREE_DAILY_QUESTIONS, day1), true, 'other devices unaffected');
+  assert.equal(questionsRemaining('device-aaaaaaaaaaaa', FREE_DAILY_QUESTIONS, new Date('2026-10-03T00:01:00Z')), FREE_DAILY_QUESTIONS);
 });

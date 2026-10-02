@@ -2,9 +2,10 @@
 // if the server restarts. Swap for Replit DB / Postgres when you scale out.
 
 export const FREE_DAILY_QUESTIONS = Number(process.env.FREE_DAILY_QUESTIONS ?? 5);
+export const PLUS_DAILY_QUESTIONS = Number(process.env.PLUS_DAILY_QUESTIONS ?? 30);
 const SUGGESTION_REFRESHES_PER_DAY = 6;
 // Many people can share one IP (mobile carriers, offices), so this is only a backstop.
-const PER_IP_DAILY = 60;
+const PER_IP_DAILY = 150;
 
 type Bucket = { day: string; count: number };
 const buckets = new Map<string, Bucket>();
@@ -28,20 +29,21 @@ function used(key: string, now: Date): number {
   return bucket && bucket.day === today(now) ? bucket.count : 0;
 }
 
-export function questionsRemaining(deviceId: string, now = new Date()): number {
-  return Math.max(0, FREE_DAILY_QUESTIONS - used(`q:${deviceId}`, now));
+/** `key` is the device ID for free users, or the RevenueCat user ID for Plus subscribers. */
+export function questionsRemaining(key: string, limit = FREE_DAILY_QUESTIONS, now = new Date()): number {
+  return Math.max(0, limit - used(`q:${key}`, now));
 }
 
 /** Reserves one question. Call `refundQuestion` if the model call fails so users are not charged for errors. */
-export function takeQuestion(deviceId: string, ip: string, now = new Date()): boolean {
-  if (questionsRemaining(deviceId, now) <= 0) return false;
+export function takeQuestion(key: string, ip: string, limit = FREE_DAILY_QUESTIONS, now = new Date()): boolean {
+  if (questionsRemaining(key, limit, now) <= 0) return false;
   if (!bump(`ip:${ip}`, PER_IP_DAILY, now)) return false;
-  return bump(`q:${deviceId}`, FREE_DAILY_QUESTIONS, now);
+  return bump(`q:${key}`, limit, now);
 }
 
-export function refundQuestion(deviceId: string, ip: string): void {
-  for (const key of [`q:${deviceId}`, `ip:${ip}`]) {
-    const bucket = buckets.get(key);
+export function refundQuestion(key: string, ip: string): void {
+  for (const bucketKey of [`q:${key}`, `ip:${ip}`]) {
+    const bucket = buckets.get(bucketKey);
     if (bucket && bucket.count > 0) bucket.count -= 1;
   }
 }
