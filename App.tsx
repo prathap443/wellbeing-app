@@ -6,6 +6,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppNavigator from './src/navigation/AppNavigator';
 import AppLock from './src/components/AppLock';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import Onboarding from './src/components/Onboarding';
 import { ONBOARDING_KEY } from './src/lib/storage';
 import { SessionProvider, useSession } from './src/lib/session';
@@ -19,9 +20,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <SessionProvider>
-        <Root />
-      </SessionProvider>
+      <ErrorBoundary>
+        <SessionProvider>
+          <Root />
+        </SessionProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }
