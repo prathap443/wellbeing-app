@@ -51,7 +51,9 @@
           "faceIDPermission": "Wellbeing uses Face ID to keep your journal and mood history private."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font",
+      "expo-asset"
     ],
     "extra": {
       "coachApiUrl": "https://wellbeing-app.replit.app",
