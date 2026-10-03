@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
@@ -41,8 +42,13 @@ const stackOptions = {
   headerTintColor: '#f8fafc',
   headerShadowVisible: false,
   headerBackButtonDisplayMode: 'minimal' as const,
-  contentStyle: { backgroundColor: BACKGROUND },
+  // Wide browser windows: keep content at a readable width, centred. Phones are unaffected.
+  contentStyle: Platform.OS === 'web' ? { backgroundColor: BACKGROUND, width: '100%' as const, maxWidth: 720, alignSelf: 'center' as const } : { backgroundColor: BACKGROUND },
 };
+
+// These screens show their own large heading, so the top bar keeps only the back button.
+// `title` stays set for the browser tab and accessibility.
+const toolOptions = (title: string) => ({ title, headerTitle: '' });
 
 // A crash in one screen shows an error with the header and back button still working.
 const screenLayout = ({ children }: { children: React.ReactNode }) => <ErrorBoundary>{children}</ErrorBoundary>;
@@ -65,19 +71,19 @@ const HomeStack = () => (
     screenLayout={screenLayout}
   >
     <Stack.Screen name="Home" component={HomeScreen} options={rootOptions} layout={rootLayout} />
-    <Stack.Screen name="CheckIn" component={CheckInScreen} options={{ title: 'Check-in' }} />
-    <Stack.Screen name="Journal" component={JournalScreen} options={{ title: 'Journal' }} />
-    <Stack.Screen name="Breathe" component={BreatheScreen} options={{ title: 'Breathe' }} />
-    <Stack.Screen name="Resources" component={ResourcesScreen} options={{ title: 'Tools and support' }} />
-    <Stack.Screen name="Grounding" component={GroundingScreen} options={{ title: 'Grounding' }} />
-    <Stack.Screen name="ReachOut" component={ReachOutScreen} options={{ title: 'Reach out' }} />
-    <Stack.Screen name="SleepReset" component={SleepResetScreen} options={{ title: 'Sleep reset' }} />
-    <Stack.Screen name="SupportGuidance" component={SupportGuidanceScreen} options={{ title: 'Get help now' }} />
-    <Stack.Screen name="Goals" component={GoalsScreen} options={{ title: 'Habits and goals' }} />
-    <Stack.Screen name="Planner" component={PlannerScreen} options={{ title: 'Planner' }} />
-    <Stack.Screen name="Meditation" component={MeditationScreen} options={{ title: 'Meditation' }} />
-    <Stack.Screen name="TherapyCompanion" component={TherapyCompanionScreen} options={{ title: 'Therapy companion' }} />
-    <Stack.Screen name="AnxietySupport" component={AnxietySupportScreen} options={{ title: 'Anxiety support' }} />
+    <Stack.Screen name="CheckIn" component={CheckInScreen} options={toolOptions('Check-in')} />
+    <Stack.Screen name="Journal" component={JournalScreen} options={toolOptions('Journal')} />
+    <Stack.Screen name="Breathe" component={BreatheScreen} options={toolOptions('Breathe')} />
+    <Stack.Screen name="Resources" component={ResourcesScreen} options={toolOptions('Tools and support')} />
+    <Stack.Screen name="Grounding" component={GroundingScreen} options={toolOptions('Grounding')} />
+    <Stack.Screen name="ReachOut" component={ReachOutScreen} options={toolOptions('Reach out')} />
+    <Stack.Screen name="SleepReset" component={SleepResetScreen} options={toolOptions('Sleep reset')} />
+    <Stack.Screen name="SupportGuidance" component={SupportGuidanceScreen} options={toolOptions('Get help now')} />
+    <Stack.Screen name="Goals" component={GoalsScreen} options={toolOptions('Habits and goals')} />
+    <Stack.Screen name="Planner" component={PlannerScreen} options={toolOptions('Planner')} />
+    <Stack.Screen name="Meditation" component={MeditationScreen} options={toolOptions('Meditation')} />
+    <Stack.Screen name="TherapyCompanion" component={TherapyCompanionScreen} options={toolOptions('Therapy companion')} />
+    <Stack.Screen name="AnxietySupport" component={AnxietySupportScreen} options={toolOptions('Anxiety support')} />
     <Stack.Screen name="Coach" component={CoachScreen} options={{ title: 'AI coach' }} />
     <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Wellbeing Plus' }} />
     <Stack.Screen name="Account" options={{ title: 'Account' }}>{() => <AccountScreen />}</Stack.Screen>
