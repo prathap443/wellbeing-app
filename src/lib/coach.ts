@@ -104,23 +104,54 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T> 
   } finally {
     clearTimeout(timer);
   }
-  const data = await response.json().catch(() => ({}));
+  // A misconfigured server can answer 200 with an HTML page; treat anything that isn't JSON as unavailable.
+  const data = await response.json().catch(() => null);
+  if (!data || typeof data !== 'object') throw new CoachError('unavailable');
   if (response.status === 429) throw new CoachError(data.error === 'too_many_refreshes' ? 'too_many_refreshes' : 'daily_limit', data.remaining ?? 0);
   if (!response.ok) throw new CoachError('unavailable', data.remaining);
   return data as T;
 }
 
+const strings = (value: unknown): string[] => (Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : []);
+
+function cleanTurn(value: any): CoachTurn | null {
+  if (!value || typeof value.question !== 'string' || typeof value.answer !== 'string') return null;
+  return {
+    question: value.question,
+    answer: value.answer,
+    followUps: strings(value.followUps),
+    tool: typeof value.tool === 'string' ? value.tool : 'none',
+    safety: value.safety === 'crisis' || value.safety === 'concern' ? value.safety : 'none',
+  };
+}
+
+/** Saved sessions are validated so a bad or older saved value can never crash the coach screen. */
 export async function loadSession(): Promise<CoachSession> {
-  const stored = await AsyncStorage.getItem(COACH_SESSION_KEY);
-  const session: CoachSession | null = stored ? JSON.parse(stored) : null;
-  if (session && session.day === todayKey()) return session;
-  return { day: todayKey(), suggestions: [], turns: [], remaining: FREE_DAILY_QUESTIONS };
+  const fresh: CoachSession = { day: todayKey(), suggestions: [], turns: [], remaining: FREE_DAILY_QUESTIONS };
+  try {
+    const stored = JSON.parse((await AsyncStorage.getItem(COACH_SESSION_KEY)) ?? 'null');
+    if (!stored || stored.day !== todayKey()) return fresh;
+    return {
+      day: stored.day,
+      suggestions: strings(stored.suggestions),
+      turns: Array.isArray(stored.turns) ? stored.turns.map(cleanTurn).filter((t: CoachTurn | null): t is CoachTurn => !!t) : [],
+      remaining: typeof stored.remaining === 'number' ? stored.remaining : FREE_DAILY_QUESTIONS,
+      limit: typeof stored.limit === 'number' ? stored.limit : undefined,
+    };
+  } catch {
+    return fresh;
+  }
 }
 
 export const saveSession = (session: CoachSession) => AsyncStorage.setItem(COACH_SESSION_KEY, JSON.stringify(session));
 
 export async function fetchSuggestions(profile: CoachProfile): Promise<{ questions: string[]; remaining: number; limit: number }> {
-  return post('/coach/suggestions', { profile, context: await buildContext() });
+  const data = await post<{ questions?: unknown; remaining?: unknown; limit?: unknown }>('/coach/suggestions', { profile, context: await buildContext() });
+  return {
+    questions: strings(data.questions),
+    remaining: typeof data.remaining === 'number' ? data.remaining : FREE_DAILY_QUESTIONS,
+    limit: typeof data.limit === 'number' ? data.limit : FREE_DAILY_QUESTIONS,
+  };
 }
 
 export async function askCoach(profile: CoachProfile, question: string, history: CoachTurn[]): Promise<CoachTurn & { remaining: number; limit: number }> {
@@ -130,5 +161,14 @@ export async function askCoach(profile: CoachProfile, question: string, history:
     context: await buildContext(),
     history: history.slice(-3).map((t) => ({ question: t.question, answer: t.answer })),
   });
-  return { question, answer: data.answer, followUps: data.follow_ups ?? [], tool: data.suggested_tool ?? 'none', safety: data.safety ?? 'none', remaining: data.remaining, limit: data.limit };
+  if (typeof data.answer !== 'string' || !data.answer) throw new CoachError('unavailable');
+  return {
+    question,
+    answer: data.answer,
+    followUps: strings(data.follow_ups),
+    tool: data.suggested_tool ?? 'none',
+    safety: data.safety ?? 'none',
+    remaining: typeof data.remaining === 'number' ? data.remaining : 0,
+    limit: typeof data.limit === 'number' ? data.limit : FREE_DAILY_QUESTIONS,
+  };
 }
