@@ -2,11 +2,11 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import React, { useState } from 'react';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { CRISIS_REGIONS, FIND_A_HELPLINE_URL, openCrisisLink } from '../lib/crisis';
+import { CRISIS_REGIONS, FIND_A_HELPLINE_URL, defaultRegionIndex, openCrisisLink } from '../lib/crisis';
 
 export default function SupportGuidanceScreen() {
   const navigation = useNavigation<any>();
-  const [regionIndex, setRegionIndex] = useState(0);
+  const [regionIndex, setRegionIndex] = useState(defaultRegionIndex);
   const region = CRISIS_REGIONS[regionIndex];
 
   return <ScrollView contentContainerStyle={styles.container}>
