@@ -22,8 +22,10 @@ Builds the web version and serves it together with the coach on one URL (open th
    bash scripts/coach-server.sh try     # real end-to-end test with your key
    ```
 3. Click **Deploy** and choose **Reserved VM** (the smallest is fine). The daily limit is counted in memory, so it needs a single instance that stays on: Autoscale would reset counts whenever it scales to zero.
-   - Build command: `cd server && npm ci`
-   - Run command: `cd server && npm start`
+   - Build command: `bash scripts/deploy-build.sh`
+   - Run command: `cd server && WEB_DIST=../dist npm start`
+
+   This serves the web version of the app, the coach and accounts from the same address.
 4. When it's live, copy the URL (e.g. `https://wellbeing-coach.replit.app`) and run:
    ```bash
    bash scripts/coach-server.sh set-url https://wellbeing-coach.replit.app
