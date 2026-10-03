@@ -54,7 +54,7 @@
       "expo-secure-store"
     ],
     "extra": {
-      "coachApiUrl": "",
+      "coachApiUrl": "https://wellbeing-app.replit.app",
       "revenueCatIosKey": "appl_xxxxx"
     }
   }
