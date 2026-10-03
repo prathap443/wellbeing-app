@@ -65,7 +65,11 @@ export default function CoachScreen() {
     (async () => {
       const [[, consent], [, storedProfile]] = await AsyncStorage.multiGet([COACH_CONSENT_KEY, COACH_PROFILE_KEY]);
       setConsented(consent === 'true');
-      setProfile(storedProfile ? JSON.parse(storedProfile) : null);
+      // Ignore a saved profile that is incomplete (e.g. from an older version) and show the quiz again.
+      const parsed = (() => { try { return storedProfile ? JSON.parse(storedProfile) : null; } catch { return null; } })();
+      setProfile(parsed && Array.isArray(parsed.focus) && parsed.focus.length && typeof parsed.style === 'string' && typeof parsed.stressResponse === 'string'
+        ? { ...parsed, recharge: Array.isArray(parsed.recharge) ? parsed.recharge : [] }
+        : null);
       setSession(await loadSession());
       setReady(true);
     })();
