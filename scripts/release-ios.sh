@@ -6,7 +6,7 @@
 # EAS builds on Expo's macOS servers, so no Mac or Xcode is required.
 set -euo pipefail
 
-BRANCH="${BRANCH:-claude/gifted-hamilton-lkjivb}"
+BRANCH="${BRANCH:-main}"
 step() { printf '\n\033[1;32m==> %s\033[0m\n' "$1"; }
 
 cd "$(dirname "$0")/.."

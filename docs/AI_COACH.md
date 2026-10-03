@@ -17,7 +17,7 @@ Builds the web version and serves it together with the coach on one URL (open th
 1. In your Wellbeing Repl, open **Tools → Secrets** and add `ANTHROPIC_API_KEY`. Create the key inside a workspace (Console → Workspaces → Default → API keys); if your key isn't workspace-scoped, also add `ANTHROPIC_WORKSPACE_ID` (starts with `wrkspc_`) (you can reuse the NutriEat key, or create a separate one so you can see each app's usage).
 2. In the Shell:
    ```bash
-   git pull origin claude/gifted-hamilton-lkjivb
+   git pull origin main
    bash scripts/coach-server.sh check   # install + typecheck + tests
    bash scripts/coach-server.sh try     # real end-to-end test with your key
    ```
