@@ -75,7 +75,7 @@ export default function MeditationScreen() {
     <View style={styles.stats}><Icon name="checkmark-circle-outline" size={21} color="#5eead4" /><Text style={styles.statsText}>{completed} practices completed</Text></View>
     <Text style={styles.sectionTitle}>Choose a practice</Text>
     {SESSIONS.map((session) => <TouchableOpacity key={session.id} style={[styles.session, selected.id === session.id && { borderColor: session.color }]} onPress={() => chooseSession(session)}><View style={[styles.listIcon, { backgroundColor: session.color + '22' }]}><Icon name={session.icon as any} size={21} color={session.color} /></View><View style={styles.sessionInfo}><Text style={styles.sessionTitle}>{session.title}</Text><Text style={styles.sessionMeta}>{session.category} - {session.minutes} min</Text></View><Icon name="chevron-forward-outline" size={19} color="#64748b" /></TouchableOpacity>)}
-    <View style={styles.audioNote}><Icon name="musical-notes-outline" size={20} color="#93c5fd" /><View style={styles.audioNoteContent}><Text style={styles.audioNoteTitle}>Ambient audio ready</Text><Text style={styles.audioNoteText}>meditation-music.mp3 plays at a gentle volume when you begin a practice.</Text></View></View>
+    <View style={styles.audioNote}><Icon name="musical-notes-outline" size={20} color="#93c5fd" /><View style={styles.audioNoteContent}><Text style={styles.audioNoteTitle}>Ambient sound</Text><Text style={styles.audioNoteText}>A soft, calming soundscape plays gently when you begin a practice.</Text></View></View>
   </ScrollView>;
 }
 
