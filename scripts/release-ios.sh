@@ -12,14 +12,34 @@ step() { printf '\n\033[1;32m==> %s\033[0m\n' "$1"; }
 cd "$(dirname "$0")/.."
 
 step "Fetching latest code from branch $BRANCH"
-if [ -n "$(git status --porcelain)" ]; then
+# Untracked files (like Replit's .replit) don't matter; uncommitted edits to tracked files do.
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   echo "You have uncommitted changes. Commit or stash them first:"
-  git status --short
+  git status --short --untracked-files=no
   exit 1
 fi
 git fetch origin "$BRANCH"
 git checkout "$BRANCH"
 git pull --ff-only origin "$BRANCH"
+
+step "Checking app configuration"
+COACH_URL=$(node -p 'require("./app.json").expo.extra?.coachApiUrl || ""')
+RC_KEY=$(node -p 'require("./app.json").expo.extra?.revenueCatIosKey || ""')
+MISSING=0
+if [[ "$COACH_URL" != https://* ]]; then
+  echo "! coachApiUrl is not set: this build will have NO AI coach and NO accounts."
+  echo "  Deploy the server first, then: bash scripts/coach-server.sh set-url https://your-app.replit.app"
+  MISSING=1
+fi
+if [[ "$RC_KEY" != appl_* ]]; then
+  echo "! revenueCatIosKey is not set: Wellbeing Plus purchases will not work in this build."
+  echo "  See docs/SUBSCRIPTIONS.md, then: bash scripts/coach-server.sh set-rc-key appl_xxxxx"
+  MISSING=1
+fi
+if [ "$MISSING" = 1 ] && [ "${ALLOW_INCOMPLETE:-}" != 1 ]; then
+  read -r -p "Build anyway? [y/N] " answer
+  [[ "$answer" =~ ^[Yy]$ ]] || { echo "Stopped. Nothing was built."; exit 1; }
+fi
 
 step "Installing dependencies"
 npm ci

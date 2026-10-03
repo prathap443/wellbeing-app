@@ -44,8 +44,13 @@ case "${1:-}" in
     URL="${2:-}"; URL="${URL%/}"
     if [[ ! "$URL" =~ ^https:// ]]; then echo "Usage: bash scripts/coach-server.sh set-url https://your-app.replit.app"; exit 1; fi
     step "Checking $URL/health"
-    curl -fsS "$URL/health" || { echo "Server did not respond. Is the deployment running?"; exit 1; }
-    echo
+    HEALTH=$(curl -fsS "$URL/health" 2>/dev/null || true)
+    if [[ "$HEALTH" != *'"ok":true'* ]]; then
+      echo "That address is not running the Wellbeing server (got: ${HEALTH:0:120})."
+      echo "In Replit → Publishing use Build: bash scripts/deploy-build.sh  and  Run: cd server && WEB_DIST=../dist npm start, then republish."
+      exit 1
+    fi
+    echo "$HEALTH"
     node -e '
       const fs = require("fs");
       const app = JSON.parse(fs.readFileSync("app.json", "utf8"));

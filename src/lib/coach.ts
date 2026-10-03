@@ -1,11 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { calculateStreaks, parseEntryDate } from './dates';
 import { getAppUserId } from './purchases';
 
 // Set "extra.coachApiUrl" in app.json to your deployed Replit URL.
 // EXPO_PUBLIC_COACH_API_URL overrides it for local/browser previews.
-export const API_URL: string = (process.env.EXPO_PUBLIC_COACH_API_URL || Constants.expoConfig?.extra?.coachApiUrl || '').replace(/\/$/, '');
+// On the web the app is served by the coach server itself (see scripts/deploy-build.sh), so it can use its own origin.
+const webOrigin = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : '';
+export const API_URL: string = (process.env.EXPO_PUBLIC_COACH_API_URL || Constants.expoConfig?.extra?.coachApiUrl || webOrigin).replace(/\/$/, '');
 
 export const COACH_PROFILE_KEY = 'coach_profile';
 export const COACH_CONSENT_KEY = 'coach_consent';
