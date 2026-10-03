@@ -15,7 +15,7 @@ externalPort = 3002
 
 [deployment]
 deploymentTarget = "cloudrun"
-run = "npx expo start --web --port 3000"
-
+build = ["sh", "-c", "bash scripts/deploy-build.sh"]
+run = ["sh", "-c", "cd server && WEB_DIST=../dist npm start"]
 [nix]
 packages = ["psmisc"]
