@@ -8,15 +8,15 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0f172a",
     "ios": {
-      "bundleIdentifier": "com.prathap443.wellbeing",
+      "bundleIdentifier": "com.pradiconsulting.wellbeing",
       "buildNumber": "1",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.prathap443.wellbeing",
+      "package": "com.pradiconsulting.wellbeing",
       "adaptiveIcon": {
         "backgroundColor": "#0f172a",
         "foregroundImage": "./assets/android-icon-foreground.png",

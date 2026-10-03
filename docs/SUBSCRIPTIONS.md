@@ -12,14 +12,14 @@
 3. Add two subscriptions to the group:
    | Reference name | Product ID | Duration | Price |
    |---|---|---|---|
-   | Plus Monthly | `com.prathap443.wellbeing.plus.monthly` | 1 month | £4.99 |
-   | Plus Annual | `com.prathap443.wellbeing.plus.annual` | 1 year | £39.99 |
+   | Plus Monthly | `com.pradiconsulting.wellbeing.plus.monthly` | 1 month | £4.99 |
+   | Plus Annual | `com.pradiconsulting.wellbeing.plus.annual` | 1 year | £39.99 |
    For each: add a display name and description (e.g. "Wellbeing Plus – 30 AI coach questions a day"), and a review screenshot of the paywall.
 4. **Users and Access → Integrations → In-App Purchase**: generate an **In-App Purchase key** (.p8) and note its Key ID and Issuer ID. RevenueCat needs it.
 5. **Users and Access → Sandbox → Test accounts**: add a sandbox tester to try purchases in TestFlight without being charged.
 
 ## 2. RevenueCat (app.revenuecat.com, free until $2.5k monthly revenue)
-1. Create a project **Wellbeing** → add an **App Store** app with bundle ID `com.prathap443.wellbeing`; upload the In-App Purchase key from step 1.4.
+1. Create a project **Wellbeing** → add an **App Store** app with bundle ID `com.pradiconsulting.wellbeing`; upload the In-App Purchase key from step 1.4.
 2. **Product catalog → Products**: import the two products.
 3. **Entitlements**: create entitlement with identifier **`plus`** and attach both products.
 4. **Offerings**: the `default` offering → add packages **Monthly** (`$rc_monthly`) and **Annual** (`$rc_annual`) with the matching products. Make it current.

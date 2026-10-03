@@ -7,7 +7,9 @@ const IOS_KEY: string = Constants.expoConfig?.extra?.revenueCatIosKey ?? '';
 export const PLUS_ENTITLEMENT = 'plus';
 
 /** In-app purchases run only in the iOS build with a RevenueCat key; the browser preview shows the paywall read-only. */
-export const purchasesAvailable = () => Platform.OS === 'ios' && IOS_KEY.startsWith('appl_');
+// Real public keys are long; placeholders such as "appl_xxxxx" count as not configured.
+const hasRealKey = /^appl_[A-Za-z0-9]{15,}$/.test(IOS_KEY) && !/x{4,}/i.test(IOS_KEY);
+export const purchasesAvailable = () => Platform.OS === 'ios' && hasRealKey;
 
 let configured = false;
 export function configurePurchases(appUserId?: string | null) {

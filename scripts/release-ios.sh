@@ -31,7 +31,7 @@ if [[ "$COACH_URL" != https://* ]]; then
   echo "  Deploy the server first, then: bash scripts/coach-server.sh set-url https://your-app.replit.app"
   MISSING=1
 fi
-if [[ "$RC_KEY" != appl_* ]]; then
+if [[ ! "$RC_KEY" =~ ^appl_[A-Za-z0-9]{15,}$ || "$RC_KEY" =~ [xX]{4,} ]]; then
   echo "! revenueCatIosKey is not set: Wellbeing Plus purchases will not work in this build."
   echo "  See docs/SUBSCRIPTIONS.md, then: bash scripts/coach-server.sh set-rc-key appl_xxxxx"
   MISSING=1
