@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -43,12 +44,15 @@ const stackOptions = {
   contentStyle: { backgroundColor: BACKGROUND },
 };
 
-const rootOptions = {
-  headerShown: false,
-  layout: ({ children }: { children: React.ReactNode }) => (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BACKGROUND }}>{children}</SafeAreaView>
-  ),
-};
+// A crash in one screen shows an error with the header and back button still working.
+const screenLayout = ({ children }: { children: React.ReactNode }) => <ErrorBoundary>{children}</ErrorBoundary>;
+
+const rootOptions = { headerShown: false };
+
+// `layout` is a Screen prop (not an option); it replaces the navigator's screenLayout, so include the boundary.
+const rootLayout = ({ children }: { children: React.ReactNode }) => (
+  <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BACKGROUND }}><ErrorBoundary>{children}</ErrorBoundary></SafeAreaView>
+);
 
 const theme = {
   ...DarkTheme,
@@ -58,8 +62,9 @@ const theme = {
 const HomeStack = () => (
   <Stack.Navigator
     screenOptions={stackOptions}
+    screenLayout={screenLayout}
   >
-    <Stack.Screen name="Home" component={HomeScreen} options={rootOptions} />
+    <Stack.Screen name="Home" component={HomeScreen} options={rootOptions} layout={rootLayout} />
     <Stack.Screen name="CheckIn" component={CheckInScreen} options={{ title: 'Check-in' }} />
     <Stack.Screen name="Journal" component={JournalScreen} options={{ title: 'Journal' }} />
     <Stack.Screen name="Breathe" component={BreatheScreen} options={{ title: 'Breathe' }} />
@@ -83,24 +88,27 @@ const HomeStack = () => (
 const HistoryStack = () => (
   <Stack.Navigator
     screenOptions={stackOptions}
+    screenLayout={screenLayout}
   >
-    <Stack.Screen name="History" component={HistoryScreen} options={rootOptions} />
+    <Stack.Screen name="History" component={HistoryScreen} options={rootOptions} layout={rootLayout} />
   </Stack.Navigator>
 );
 
 const InsightsStack = () => (
   <Stack.Navigator
     screenOptions={stackOptions}
+    screenLayout={screenLayout}
   >
-    <Stack.Screen name="Insights" component={InsightsScreen} options={rootOptions} />
+    <Stack.Screen name="Insights" component={InsightsScreen} options={rootOptions} layout={rootLayout} />
   </Stack.Navigator>
 );
 
 const SettingsStack = () => (
   <Stack.Navigator
     screenOptions={stackOptions}
+    screenLayout={screenLayout}
   >
-    <Stack.Screen name="Settings" component={SettingsScreen} options={rootOptions} />
+    <Stack.Screen name="Settings" component={SettingsScreen} options={rootOptions} layout={rootLayout} />
     <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy Policy' }} />
     <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Wellbeing Plus' }} />
     <Stack.Screen name="Account" options={{ title: 'Account' }}>{() => <AccountScreen />}</Stack.Screen>
