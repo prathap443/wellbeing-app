@@ -6,7 +6,7 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 const POINTS = [
   { icon: 'happy-outline', title: 'Check in with yourself', text: 'Log your mood, sleep and energy in seconds and spot patterns over time.' },
   { icon: 'leaf-outline', title: 'Tools for hard moments', text: 'Breathing, grounding, meditation, journaling and an anxiety reset.' },
-  { icon: 'lock-closed-outline', title: 'Private by design', text: 'No account. Everything stays on this device unless you choose to export it.' },
+  { icon: 'lock-closed-outline', title: 'Private by design', text: 'Your moods and journal stay on this device. No ads, no tracking. The AI coach and accounts are optional.' },
 ];
 
 export default function Onboarding({ onDone }: { onDone: () => void }) {

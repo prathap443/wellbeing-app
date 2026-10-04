@@ -1,25 +1,25 @@
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import React from 'react';
 
-// Keep in sync with PRIVACY.md, which is the public copy for the App Store listing.
+// Keep in sync with PRIVACY.md, which is served at /privacy and linked from the App Store listing.
 const SECTIONS = [
-  ['Summary', 'Wellbeing does not sell your data and has no account, analytics or advertising. Everything stays on your device unless you choose to use the AI coach.'],
-  ['What is stored', 'Mood entries, check-ins, journal reflections, plans, habits, meditation progress, trusted contacts and settings are saved only in this app’s private storage on your device.'],
-  ['Who can see it', 'Only you. We have no servers and cannot access your entries. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.'],
-  ['AI coach (optional)', 'If you agree to use the AI coach, the choices you made in its short quiz, an optional first name, your recent mood ratings and check-in scores, and the question you tap are sent to our coach server and to Anthropic, which provides the Claude AI model, to generate a reply. Your notes, journal entries and contacts are never sent. Our server does not store questions or answers or link them to you; it keeps only an anonymous per-install counter for the daily question limit. Anthropic processes requests under its commercial terms and may retain them for a limited period for safety and abuse monitoring; it does not use them to train models.'],
-  ['Account (optional)', 'If you create an account, we store your email address, optional first name and a securely hashed password on our server so you can sign in and keep Wellbeing Plus on your devices. Your moods, journal, check-ins and contacts are never uploaded. You can delete your account at any time in Settings → Account → Delete account.'],
-  ['Subscriptions', 'Wellbeing Plus is sold through the App Store. Apple processes payment; we never see your card details. We use RevenueCat to confirm your subscription status, which receives an anonymous app user ID (or your account ID if signed in) and your App Store purchase history.'],
-  ['Notifications', 'Daily reminders are scheduled locally on your device. No push notification service receives your data.'],
-  ['Sharing', 'Data leaves your device only when you choose to: for example using Export Data, sending a message to a trusted contact, or calling a helpline.'],
-  ['Deleting your data', 'Use Settings → Clear All Data, or delete the app. Both permanently remove everything stored by Wellbeing on this device.'],
-  ['Children', 'Wellbeing is not directed at children under 13.'],
-  ['Changes', 'If this policy changes, the updated version will be published with the app update.'],
-  ['Contact', 'Questions? Use the support link on the Wellbeing App Store page.'],
+  ['Summary', 'Your moods, check-ins, journal, plans, habits, therapy notes and contacts are stored only on this device. The AI coach and accounts are optional. We do not sell your data, show ads, or use analytics or tracking.'],
+  ['What stays on your device', 'Mood entries, check-ins, journal reflections, plans, habits, meditation progress, therapy companion notes, trusted contacts and settings are saved in this app’s private storage. We cannot access them. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.'],
+  ['AI coach (optional)', 'Only after you agree, we send your quiz answers, optional first name, mood ratings from the last two weeks, latest sleep, energy and stress scores, and your question (plus up to three earlier questions and replies from today) to our server and to Anthropic, which provides the Claude AI model, to generate a reply. Your notes, journal, therapy notes and contacts are never sent. We do not store or log questions or replies. Anthropic does not use this data to train its models and may keep it for a limited period for safety monitoring. A random install ID, not linked to you, enforces the daily question limit.'],
+  ['Account (optional)', 'If you create an account, we store your email, optional first name and a securely hashed password, only to sign you in and keep Wellbeing Plus on your devices. Password reset codes are emailed through Google, stored hashed and expire after 15 minutes. Delete your account any time in Settings → Account → Delete account.'],
+  ['Subscriptions', 'Wellbeing Plus is sold through the App Store. Apple processes payment; we never see your card details. RevenueCat confirms your subscription status and receives an anonymous app user ID (or your account ID if signed in) and your purchase history for this app.'],
+  ['Who processes data for us', 'Anthropic (AI coach), Replit and Neon (our server and account database), RevenueCat (subscriptions), Google (reset emails) and Apple (App Store). They may process data in the United States under their data protection terms, including Standard Contractual Clauses where required.'],
+  ['Legal bases (UK and EU)', 'Explicit consent for the AI coach; contract for your account and Wellbeing Plus; legitimate interests to keep the service secure.'],
+  ['Notifications', 'Daily reminders are scheduled on your device. No push notification service receives your data.'],
+  ['Deleting your data', 'Use Settings → Clear All Data or delete the app to remove everything on this device. Delete your account in Settings → Account.'],
+  ['Your rights', 'You can ask to access, correct, delete or export your data, or withdraw consent, by emailing wellbeingsupport247@gmail.com. You can also complain to your data protection authority (in the UK, the ICO).'],
+  ['Age', 'Wellbeing is for adults aged 18 and over.'],
+  ['Contact', 'Wellbeing is provided by Prathap Adicherla. Email wellbeingsupport247@gmail.com. The full policy is at wellbeing-app.replit.app/privacy.'],
 ];
 
 export default function PrivacyScreen() {
   return <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.updated}>Last updated 2 October 2026</Text>
+    <Text style={styles.updated}>Last updated 4 October 2026</Text>
     {SECTIONS.map(([title, body]) => <React.Fragment key={title}><Text style={styles.heading}>{title}</Text><Text style={styles.body}>{body}</Text></React.Fragment>)}
   </ScrollView>;
 }

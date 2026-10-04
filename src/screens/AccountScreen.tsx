@@ -2,7 +2,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleShe
 import React, { useState } from 'react';
 import { NavigationContext } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { ACCOUNT_ERROR_TEXT, AccountError } from '../lib/account';
+import { ACCOUNT_ERROR_TEXT, AccountError, requestPasswordReset } from '../lib/account';
 import { useSession } from '../lib/session';
 
 type Props = {
@@ -14,7 +14,9 @@ export default function AccountScreen({ onDone }: Props) {
   // Context (not useNavigation) so this screen also works before the navigator mounts, during onboarding.
   const navigation = React.useContext(NavigationContext) as any;
   const session = useSession();
-  const [mode, setMode] = useState<'signup' | 'signin'>('signup');
+  const [mode, setMode] = useState<'signup' | 'signin' | 'forgot' | 'reset'>('signup');
+  const [code, setCode] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,6 +38,41 @@ export default function AccountScreen({ onDone }: Props) {
       finish();
     } catch (e) {
       setError(ACCOUNT_ERROR_TEXT[(e as AccountError).code] ?? 'Something went wrong. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const errorText = (e: unknown) => ACCOUNT_ERROR_TEXT[(e as AccountError).code] ?? 'Something went wrong. Please try again.';
+  const goTo = (next: typeof mode) => { setMode(next); setError(null); setNotice(null); };
+
+  const sendCode = async () => {
+    setError(null);
+    if (!email.trim()) { setError('Enter the email you signed up with.'); return; }
+    setBusy(true);
+    try {
+      await requestPasswordReset(email.trim());
+      setCode(''); setPassword('');
+      setMode('reset');
+      setNotice(`If there is an account for ${email.trim()}, we have emailed a 6-digit code. It expires in 15 minutes. Check your spam folder if you cannot see it.`);
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitReset = async () => {
+    setError(null);
+    if (!/^\d{6}$/.test(code.replace(/\s+/g, ''))) { setError('Enter the 6-digit code from the email.'); return; }
+    if (password.length < 8) { setError(ACCOUNT_ERROR_TEXT.weak_password); return; }
+    setBusy(true);
+    try {
+      await session.resetPassword(email.trim(), code.replace(/\s+/g, ''), password);
+      setPassword(''); setCode('');
+      finish();
+    } catch (e) {
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -82,6 +119,34 @@ export default function AccountScreen({ onDone }: Props) {
     </ScrollView>;
   }
 
+  if (mode === 'forgot' || mode === 'reset') {
+    return <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.badge}><Icon name="key-outline" size={24} color="#bbf7d0" /></View>
+        <Text style={styles.title}>{mode === 'forgot' ? 'Reset your password' : 'Enter your code'}</Text>
+        <Text style={styles.subtitle}>{mode === 'forgot' ? 'Enter the email you signed up with and we will send you a 6-digit code.' : 'Choose a new password to finish.'}</Text>
+        {notice ? <View style={styles.notice}><Icon name="mail-outline" size={18} color="#6ee7b7" /><Text style={styles.noticeText}>{notice}</Text></View> : null}
+
+        {mode === 'forgot' ? <>
+          <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Email" placeholderTextColor="#64748b" autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" onSubmitEditing={sendCode} />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <TouchableOpacity style={[styles.primary, busy && styles.primaryDisabled]} onPress={sendCode} disabled={busy} accessibilityRole="button">
+            {busy ? <ActivityIndicator color="#022c22" /> : <Text style={styles.primaryText}>Send code</Text>}
+          </TouchableOpacity>
+        </> : <>
+          <TextInput style={[styles.input, styles.codeInput]} value={code} onChangeText={(v) => setCode(v.replace(/[^\d]/g, '').slice(0, 6))} placeholder="6-digit code" placeholderTextColor="#64748b" keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" maxLength={6} />
+          <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="New password (8+ characters)" placeholderTextColor="#64748b" secureTextEntry autoComplete="new-password" textContentType="newPassword" onSubmitEditing={submitReset} />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <TouchableOpacity style={[styles.primary, busy && styles.primaryDisabled]} onPress={submitReset} disabled={busy} accessibilityRole="button">
+            {busy ? <ActivityIndicator color="#022c22" /> : <Text style={styles.primaryText}>Set new password</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.switch} onPress={sendCode} disabled={busy}><Text style={styles.switchText}>Didn't get it? <Text style={styles.link}>Send a new code</Text></Text></TouchableOpacity>
+        </>}
+        <TouchableOpacity style={styles.switch} onPress={() => goTo('signin')}><Text style={styles.link}>Back to sign in</Text></TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>;
+  }
+
   return <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.badge}><Icon name="person-outline" size={24} color="#bbf7d0" /></View>
@@ -92,11 +157,12 @@ export default function AccountScreen({ onDone }: Props) {
       <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Email" placeholderTextColor="#64748b" autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" />
       <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder={mode === 'signup' ? 'Password (8+ characters)' : 'Password'} placeholderTextColor="#64748b" secureTextEntry autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} textContentType={mode === 'signup' ? 'newPassword' : 'password'} onSubmitEditing={submit} />
 
+      {mode === 'signin' ? <TouchableOpacity style={styles.forgot} onPress={() => goTo('forgot')} accessibilityRole="button"><Text style={styles.link}>Forgot password?</Text></TouchableOpacity> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <TouchableOpacity style={[styles.primary, busy && styles.primaryDisabled]} onPress={submit} disabled={busy} accessibilityRole="button">
         {busy ? <ActivityIndicator color="#022c22" /> : <Text style={styles.primaryText}>{mode === 'signup' ? 'Create account' : 'Sign in'}</Text>}
       </TouchableOpacity>
-      <TouchableOpacity style={styles.switch} onPress={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setError(null); }}>
+      <TouchableOpacity style={styles.switch} onPress={() => goTo(mode === 'signup' ? 'signin' : 'signup')}>
         <Text style={styles.switchText}>{mode === 'signup' ? 'Already have an account? ' : 'New here? '}<Text style={styles.link}>{mode === 'signup' ? 'Sign in' : 'Create an account'}</Text></Text>
       </TouchableOpacity>
       {onDone ? <TouchableOpacity style={styles.skip} onPress={onDone}><Text style={styles.skipText}>Continue without an account</Text></TouchableOpacity> : null}
@@ -112,6 +178,9 @@ const styles = StyleSheet.create({
   title: { color: '#f8fafc', fontSize: 26, fontWeight: '800', marginTop: 18 }, subtitle: { color: '#94a3b8', lineHeight: 21, marginTop: 8, marginBottom: 22 },
   input: { backgroundColor: '#1e293b', color: '#f8fafc', borderColor: '#334155', borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, height: 50, fontSize: 16, marginBottom: 12 },
   error: { color: '#fca5a5', marginBottom: 10, lineHeight: 19 },
+  forgot: { alignSelf: 'flex-end', paddingVertical: 4, marginBottom: 10 },
+  codeInput: { fontSize: 22, letterSpacing: 6, textAlign: 'center' },
+  notice: { flexDirection: 'row', gap: 10, backgroundColor: '#064e3b', borderRadius: 12, padding: 12, marginBottom: 16 }, noticeText: { color: '#d1fae5', flex: 1, lineHeight: 19, fontSize: 13 },
   primary: { backgroundColor: '#10b981', borderRadius: 26, paddingVertical: 15, alignItems: 'center', marginTop: 6 }, primaryDisabled: { opacity: 0.6 }, primaryText: { color: '#022c22', fontWeight: '800', fontSize: 16 },
   switch: { alignItems: 'center', padding: 16 }, switchText: { color: '#94a3b8' }, link: { color: '#6ee7b7', fontWeight: '700' },
   skip: { alignItems: 'center', padding: 8 }, skipText: { color: '#64748b', fontWeight: '600' },

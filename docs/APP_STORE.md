@@ -1,95 +1,148 @@
-# App Store submission guide — Wellbeing
+# App Store submission guide – Wellbeing: Mood & Calm
 
-## 1. One-time setup
-1. Join the Apple Developer Program (developer.apple.com/programs, $99/year). Approval can take 1–2 days.
-2. Create a free Expo account at expo.dev.
-3. Host `PRIVACY.md` at a **public** URL (the GitHub repo is private). Options: a public GitHub Gist, Notion page, or a Replit static deployment. Replace `SUPPORT_EMAIL_HERE` first.
+Everything below matches the app as built. Copy each block into App Store Connect as-is.
 
-## 2. Build and upload
-In the Replit shell:
+## 1. Build and upload
+
+In the Replit Shell:
+
 ```bash
 bash scripts/release-ios.sh
 ```
-Sign in with your Apple ID when EAS asks and let it create the certificates. The build uploads to TestFlight automatically.
 
-## 3. App Store Connect listing (appstoreconnect.apple.com → My Apps → Wellbeing)
+Sign in with your Apple ID when EAS asks and let it create the certificates. The build uploads to TestFlight automatically; it appears in App Store Connect after 10–30 minutes of processing.
+
+## 2. App Information
 
 | Field | Value |
 |---|---|
-| Name | Wellbeing (if taken: "Wellbeing: Mood & Calm") |
+| Name | Wellbeing: Mood & Calm |
 | Subtitle | Mood tracker, journal & calm |
+| Bundle ID | com.pradiconsulting.wellbeing |
 | Category | Health & Fitness (secondary: Lifestyle) |
-| Price | Free |
-| Age rating | 12+ is typical for mental-health topics. Answer "Medical/Treatment Information: Infrequent/Mild". |
-| Privacy Policy URL | your public PRIVACY.md URL |
-| Support URL | same page, or any page with your contact email |
+| Content rights | Yes, contains third-party content, and I have the rights (AI replies via Anthropic; open-source icons) |
+| Age rating | 18+ (overridden from the calculated 13+) |
+| Price | Free, with Wellbeing Plus subscriptions |
+| Availability | United Kingdom, Ireland, United States, Canada, Australia, Germany, Switzerland, Denmark, Poland, India |
+| Privacy Policy URL | https://wellbeing-app.replit.app/privacy |
+| Support URL | https://wellbeing-app.replit.app/support |
+| Marketing URL | leave empty |
+| Copyright | 2026 Prathap Adicherla |
 
-**Promotional text**
-> A calm, private space to notice how you feel and take small steps that help.
+## 3. Version 1.0 listing
 
-**Description**
-> Wellbeing helps you check in with yourself, understand your patterns and find support when things feel hard — all privately on your device.
->
-> CHECK IN
-> • Log your mood in seconds, with an optional note
-> • Daily check-ins for sleep, energy and stress
-> • History, streaks and weekly insights
->
-> TOOLS FOR HARD MOMENTS
-> • Box breathing and 5-4-3-2-1 grounding
-> • Meditation studio with calming audio
-> • Anxiety support and guided journaling
-> • Sleep reset routine
->
-> PLAN AND GROW
-> • Habits and weekly goals
-> • Mental state planner for your capacity today
-> • Therapy companion to prepare for sessions
->
-> SUPPORT WHEN YOU NEED IT
-> • One tap to crisis lines in the UK, Ireland, US, Canada and Australia
-> • Trusted contacts with a ready-to-send message
->
-> PRIVATE BY DESIGN
-> • No account, no ads, no tracking
-> • Optional Face ID lock
-> • Export or delete your data at any time
->
-> YOUR AI COACH
-> • Questions picked for your personality and how you've been feeling
-> • Warm, practical guidance and the right tool for the moment
-> • 5 free questions every day
->
-> Wellbeing supports self-care and is not a medical device. It does not diagnose or treat any condition. If you are in danger, contact your local emergency services.
+**Promotional text** (170 characters max; can be changed any time without review)
 
-**Keywords** (100 chars max)
-`mood,tracker,journal,anxiety,mental health,meditation,breathing,calm,self care,stress,sleep,diary`
+```
+Check in with yourself, spot your patterns and get practical next steps from a supportive AI coach. Your journal and moods stay on your phone.
+```
 
-## 4. App Privacy questionnaire
-**Without the AI coach** (`extra.coachApiUrl` empty in app.json): choose **"Data Not Collected"**.
+**Keywords** (100 characters max; words already in the name and subtitle are indexed, so they are not repeated)
 
-**With the AI coach enabled**, declare:
-| Data type | Used for | Linked to user? | Tracking? |
+```
+anxiety,stress,meditation,breathing,sleep,therapy,mindfulness,diary,selfcare,wellness,ai coach
+```
+
+**Description** (4000 characters max)
+
+```
+Wellbeing is a calm, private space to notice how you feel and take small steps that help.
+
+CHECK IN WITH YOURSELF
+• Log your mood in seconds, with an optional note
+• Daily check-in for sleep, energy and stress
+• See your streaks, mood trends and patterns over time
+
+AN AI COACH THAT GETS YOU
+• Answer a short quiz and the coach suggests questions that fit what you are dealing with
+• Practical, encouraging next steps based on your recent check-ins
+• Points you to the right tool in the app, such as breathing or grounding
+• 5 free questions every day
+
+TOOLS FOR CALM
+• Box breathing and 5-4-3-2-1 grounding
+• Guided meditations with gentle ambient sound
+• Anxiety support and a sleep reset routine
+• Reflective journal that helps you reframe difficult thoughts
+• Habits and weekly goals
+• Mental state planner for the moments you find hard
+
+GET MORE FROM THERAPY
+• Plan what you want to talk about and the questions to ask
+• Keep the small actions you agree with your therapist visible between sessions
+
+HELP WHEN IT MATTERS
+• One tap to crisis lines for your country, including the UK, Ireland, US, Canada, Australia, Germany, Switzerland, Denmark, Poland and India
+
+PRIVATE BY DESIGN
+• Your moods, journal and notes are stored only on your phone
+• No ads, no tracking, no analytics
+• Optional app lock with Face ID
+• Accounts are optional; the app works fully without one
+
+WELLBEING PLUS
+Upgrade for 30 AI coach questions a day and keep Plus on all your devices with a free account. Plus is available as a monthly or annual auto-renewing subscription. Payment is charged to your Apple account and renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel any time in your App Store account settings.
+
+Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://wellbeing-app.replit.app/privacy
+
+Wellbeing supports everyday self-care. It is not a medical device and does not provide diagnosis, treatment or crisis support. If you are in danger, contact your local emergency number. For adults aged 18 and over.
+```
+
+## 4. App Review Information
+
+**Sign-in required:** No (accounts are optional). Still fill in the demo account below so the reviewer can test sign-in, password reset and account deletion.
+
+**Demo account:** create it first on the live server: open https://wellbeing-app.replit.app, finish onboarding, choose Create account, and use an email you can read (for example `wellbeingsupport247+review@gmail.com`, which arrives in the support inbox). Enter that email and password in the sign-in fields.
+
+**Notes** (paste as-is)
+
+```
+Wellbeing is a self-care app: mood logging, daily check-ins, journaling, breathing, grounding, meditation, a therapy-session planner and an optional AI coach. It is not a medical device; this is stated at first launch, in the coach, and in the description.
+
+AI COACH: Home > "Your AI coach". The user must agree to a consent screen before anything is sent. Replies are generated by Anthropic's Claude model through our server. Only quiz answers, an optional first name, recent mood ratings, check-in scores and the chosen question are sent; journal entries, notes and contacts never leave the device. Free users get 5 questions a day; Wellbeing Plus subscribers get 30. If a question suggests risk, the coach shows a safety card linking to crisis lines.
+
+CRISIS SUPPORT: "Get help" on Home opens crisis lines for the user's country (based on the device region), with one-tap calling and findahelpline.com for other countries.
+
+ACCOUNTS (optional): Settings > "Create account or sign in". Use the demo account provided. Password reset: Sign in > "Forgot password?" emails a 6-digit code. Account deletion: Settings > Account > "Delete account" permanently deletes the account on our server.
+
+SUBSCRIPTIONS: Settings > "Wellbeing Plus" shows the monthly and annual auto-renewable subscriptions with prices, a Restore Purchases button, and links to the Terms of Use (Apple standard EULA) and Privacy Policy. Plus raises the coach limit from 5 to 30 questions a day.
+
+PRIVACY: No ads, analytics or tracking. Data types declared in App Privacy match this behaviour.
+
+AGE: Rated 18+; the app is intended for adults.
+```
+
+**Contact:** your name, phone number and wellbeingsupport247@gmail.com.
+
+## 5. Subscriptions (Wellbeing Plus group)
+
+| Reference name | Product ID | Duration | UK price |
 |---|---|---|---|
-| Health & Fitness → Health (mood ratings, check-in scores) | App Functionality | No | No |
-| User Content → Other User Content (quiz choices, tapped questions) | App Functionality | No | No |
-| Identifiers → Device ID (random per-install ID for the daily limit) | App Functionality | No | No |
+| Plus Monthly | com.pradiconsulting.wellbeing.plus.monthly | 1 month | £4.99 |
+| Plus Annual | com.pradiconsulting.wellbeing.plus.annual | 1 year | £39.99 |
 
-**With accounts and Wellbeing Plus**, also declare:
-| Data type | Used for | Linked to user? | Tracking? |
-|---|---|---|---|
-| Contact Info → Email Address | App Functionality | Yes | No |
-| Contact Info → Name (optional first name) | App Functionality | Yes | No |
-| Identifiers → User ID | App Functionality | Yes | No |
-| Purchases → Purchase History (via RevenueCat) | App Functionality | Yes | No |
+Both: display name "Wellbeing Plus", description "30 AI coach questions a day", review screenshot of the paywall (Settings > Wellbeing Plus), review note "Unlocks 30 AI coach questions per day (free users get 5). Manage via Settings > Subscriptions." Submit them together with version 1.0 (select them in the version's In-App Purchases and Subscriptions section).
 
-Apple also requires (guideline 5.1.2(i)) that the app names the third-party AI provider and gets consent before sending data. The coach's consent screen does this.
+## 6. App Privacy (Data Types)
 
-## 5. Screenshots
-Required: a 6.9" iPhone set (1320×2868) and, because iPad is supported, a 13" iPad set (2064×2752). Take them in the iOS Simulator or with TestFlight on a device: Home, Check-in, Insights, Breathe, Get help now.
+Choose "Yes, we collect data". No data is used for tracking.
 
-## 6. Notes for App Review
-> Wellbeing is a self-care app; all data is stored locally with no account or login required. The optional AI coach (Home → Your AI coach) shows a consent screen naming Anthropic as the AI provider before any data is sent. Users cannot type free text to the coach; they tap suggested questions. The coach is instructed not to diagnose or give medication advice, flags crisis situations, and links to crisis lines. Free users get 5 coach questions a day; Wellbeing Plus subscribers get 30. Accounts are optional (Settings → Account) and can be deleted in-app. A sandbox tester account is not needed to review: all features except the higher coach limit work without purchase. The "Get help" button on the Home screen opens crisis-line numbers for several countries. The app includes a clear disclaimer at first launch and in Settings that it is not a medical device. No in-app purchases in this version.
+| Data type | Purpose | Linked to user |
+|---|---|---|
+| Health & Fitness > Health (mood ratings, check-in scores sent to the coach) | App Functionality | No |
+| User Content > Other User Content (coach quiz answers and questions) | App Functionality | No |
+| Identifiers > Device ID (random install ID for the daily limit) | App Functionality | No |
+| Contact Info > Email Address (accounts, password reset) | App Functionality | Yes |
+| Contact Info > Name (optional first name) | App Functionality | Yes |
+| Identifiers > User ID (account ID) | App Functionality | Yes |
+| Purchases > Purchase History (RevenueCat) | App Functionality | Yes |
 
-## 7. Subscriptions (Wellbeing Plus)
-See docs/SUBSCRIPTIONS.md. In App Store Connect, attach both subscriptions to the version you submit ("In-App Purchases and Subscriptions" section of the version page); first-time subscriptions are reviewed together with the app.
+## 7. Before you submit
+
+- [ ] `curl https://wellbeing-app.replit.app/health` shows `"database":true` and `"email":true`
+- [ ] Publishing is set to **Reserved VM** (not Autoscale)
+- [ ] Demo account created and its password reset tested once
+- [ ] TestFlight: sandbox purchase of Plus works and the coach shows 30 questions
+- [ ] Screenshots uploaded (6.5" set)
+- [ ] EU and Swiss representative appointed if launching in those countries

@@ -2,6 +2,7 @@ import { createApp } from './app.js';
 import { MODEL } from './coach.js';
 import { MemoryUserStore, PostgresUserStore } from './accounts.js';
 import { pruneQuotas } from './quota.js';
+import { createMailer } from './mailer.js';
 
 const coachEnabled = !!process.env.ANTHROPIC_API_KEY;
 if (!coachEnabled) console.warn('ANTHROPIC_API_KEY is not set (Replit → Secrets). Coach endpoints will return 503.');
@@ -14,7 +15,10 @@ if (!process.env.DATABASE_URL) console.warn('DATABASE_URL is not set: accounts a
 
 if (!process.env.REVENUECAT_SECRET_KEY) console.warn('REVENUECAT_SECRET_KEY is not set: everyone gets the free coach limit.');
 
-const app = createApp({ users, sessionSecret, coachEnabled, webDist: process.env.WEB_DIST });
+const sendMail = createMailer();
+if (!sendMail) console.warn('SMTP_USER / SMTP_PASS are not set: password reset emails are unavailable.');
+
+const app = createApp({ users, sessionSecret, coachEnabled, webDist: process.env.WEB_DIST, sendMail, database: !!process.env.DATABASE_URL });
 
 setInterval(() => pruneQuotas(), 60 * 60 * 1000).unref();
 

@@ -10,6 +10,7 @@ type Session = {
   customerInfo: CustomerInfo | null;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  resetPassword: (email: string, code: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   setCustomerInfo: (info: CustomerInfo | null) => void;
@@ -37,9 +38,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const afterAuth = useCallback(async (next: account.Account) => {
     setUser(next);
-    // Moves any purchase made before signing in onto the account.
-    const info = await purchases.linkAccount(next.id).catch(() => null);
-    if (info) setCustomerInfo(info);
+    // Moves any purchase made before signing in onto the account. Runs in the background so a slow
+    // or unreachable RevenueCat can never leave the sign-in button spinning.
+    purchases.linkAccount(next.id).then((info) => { if (info) setCustomerInfo(info); }).catch(() => undefined);
   }, []);
 
   const value = useMemo<Session>(() => ({
@@ -49,6 +50,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     customerInfo,
     signUp: async (email, password, name) => afterAuth(await account.signUp(email, password, name)),
     signIn: async (email, password) => afterAuth(await account.signIn(email, password)),
+    resetPassword: async (email, code, password) => afterAuth(await account.resetPassword(email, code, password)),
     signOut: async () => {
       await account.signOut();
       setUser(null);

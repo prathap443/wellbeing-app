@@ -236,7 +236,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>About</Text>
         {actionButton(
           'Privacy Policy',
-          'Your data stays on this device',
+          'How your data is handled',
           'shield-checkmark-outline',
           () => navigation.navigate('Privacy')
         )}

@@ -31,6 +31,10 @@ export const ACCOUNT_ERROR_TEXT: Record<string, string> = {
   too_many_attempts: 'Too many attempts. Please wait a while and try again.',
   offline: 'Could not connect. Check your internet connection and try again.',
   accounts_unavailable: 'Accounts are not available right now.',
+  invalid_code: 'That code is not right. Check the latest email and try again.',
+  code_expired: 'That code has expired or been used. Request a new one.',
+  reset_unavailable: 'Password reset is not available right now. Email wellbeingsupport247@gmail.com for help.',
+  email_failed: 'We could not send the email. Please try again in a few minutes.',
 };
 
 async function request<T>(method: string, path: string, body?: unknown, token?: string | null): Promise<T> {
@@ -60,6 +64,15 @@ export const signUp = async (email: string, password: string, name: string) =>
 
 export const signIn = async (email: string, password: string) =>
   saveSession(await request('POST', '/auth/login', { email, password }));
+
+/** Emails a 6-digit code if an account exists. Always resolves the same way, so it can't reveal who has an account. */
+export const requestPasswordReset = async (email: string) => {
+  await request('POST', '/auth/reset/request', { email });
+};
+
+/** Sets a new password with the emailed code, then signs in. */
+export const resetPassword = async (email: string, code: string, password: string) =>
+  saveSession(await request('POST', '/auth/reset/confirm', { email, code, password }));
 
 export async function signOut(): Promise<void> {
   await tokenStore.clear();

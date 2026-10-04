@@ -1,4 +1,4 @@
-import { randomUUID, scrypt as scryptCb, randomBytes, timingSafeEqual, createHmac } from 'node:crypto';
+import { randomUUID, scrypt as scryptCb, randomBytes, randomInt, timingSafeEqual, createHmac } from 'node:crypto';
 import { promisify } from 'node:util';
 import pg from 'pg';
 
@@ -12,7 +12,16 @@ export interface UserStore {
   findByEmail(email: string): Promise<StoredUser | null>;
   findById(id: string): Promise<User | null>;
   delete(id: string): Promise<void>;
+  setPassword(id: string, passwordHash: string): Promise<void>;
+  // Password reset codes are stored hashed, keyed by email, so they survive restarts and work across server instances.
+  saveReset(email: string, codeHash: string, expiresAt: number): Promise<void>;
+  getReset(email: string): Promise<ResetCode | null>;
+  /** Records a wrong guess and returns the new attempt count. */
+  bumpReset(email: string): Promise<number>;
+  clearReset(email: string): Promise<void>;
 }
+
+export type ResetCode = { codeHash: string; expiresAt: number; attempts: number };
 
 /** Used for tests and local previews only: accounts vanish on restart. */
 export class MemoryUserStore implements UserStore {
@@ -31,7 +40,29 @@ export class MemoryUserStore implements UserStore {
     return user ? publicUser(user) : null;
   }
   async delete(id: string) {
+    const user = this.users.get(id);
+    if (user) this.resets.delete(user.email);
     this.users.delete(id);
+  }
+  async setPassword(id: string, passwordHash: string) {
+    const user = this.users.get(id);
+    if (user) user.passwordHash = passwordHash;
+  }
+  private resets = new Map<string, ResetCode>();
+  async saveReset(email: string, codeHash: string, expiresAt: number) {
+    this.resets.set(email, { codeHash, expiresAt, attempts: 0 });
+  }
+  async getReset(email: string) {
+    return this.resets.get(email) ?? null;
+  }
+  async bumpReset(email: string) {
+    const reset = this.resets.get(email);
+    if (!reset) return 0;
+    reset.attempts += 1;
+    return reset.attempts;
+  }
+  async clearReset(email: string) {
+    this.resets.delete(email);
   }
 }
 
@@ -46,7 +77,12 @@ export class PostgresUserStore implements UserStore {
       name TEXT,
       password_hash TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    )`);
+    )`).then(() => this.pool.query(`CREATE TABLE IF NOT EXISTS password_resets (
+      email TEXT PRIMARY KEY,
+      code_hash TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0
+    )`));
   }
   private row(r: any): StoredUser {
     return { id: r.id, email: r.email, name: r.name, passwordHash: r.password_hash, createdAt: new Date(r.created_at).toISOString() };
@@ -71,7 +107,35 @@ export class PostgresUserStore implements UserStore {
   }
   async delete(id: string) {
     await this.ready;
+    await this.pool.query('DELETE FROM password_resets WHERE email = (SELECT email FROM users WHERE id = $1)', [id]);
     await this.pool.query('DELETE FROM users WHERE id = $1', [id]);
+  }
+  async setPassword(id: string, passwordHash: string) {
+    await this.ready;
+    await this.pool.query('UPDATE users SET password_hash = $2 WHERE id = $1', [id, passwordHash]);
+  }
+  async saveReset(email: string, codeHash: string, expiresAt: number) {
+    await this.ready;
+    await this.pool.query(
+      `INSERT INTO password_resets (email, code_hash, expires_at, attempts) VALUES ($1, $2, to_timestamp($3 / 1000.0), 0)
+       ON CONFLICT (email) DO UPDATE SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at, attempts = 0`,
+      [email, codeHash, expiresAt],
+    );
+  }
+  async getReset(email: string) {
+    await this.ready;
+    const result = await this.pool.query('SELECT code_hash, expires_at, attempts FROM password_resets WHERE email = $1', [email]);
+    const r = result.rows[0];
+    return r ? { codeHash: r.code_hash, expiresAt: new Date(r.expires_at).getTime(), attempts: r.attempts } : null;
+  }
+  async bumpReset(email: string) {
+    await this.ready;
+    const result = await this.pool.query('UPDATE password_resets SET attempts = attempts + 1 WHERE email = $1 RETURNING attempts', [email]);
+    return result.rows[0]?.attempts ?? 0;
+  }
+  async clearReset(email: string) {
+    await this.ready;
+    await this.pool.query('DELETE FROM password_resets WHERE email = $1', [email]);
   }
 }
 
@@ -116,5 +180,16 @@ export const normaliseEmail = (value: unknown): string | null => {
   const email = value.trim().toLowerCase();
   return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 };
+
+// ---------- Password reset codes ----------
+export const RESET_CODE_MINUTES = 15;
+export const RESET_MAX_ATTEMPTS = 5;
+export const newResetCode = () => randomInt(0, 1_000_000).toString().padStart(6, '0');
+/** Codes are stored as an HMAC (keyed with SESSION_SECRET), never in plain text. */
+export const hashResetCode = (email: string, code: string, secret: string) => createHmac('sha256', secret).update(`reset:${email}:${code}`).digest('hex');
+export function sameHash(a: string, b: string): boolean {
+  const x = Buffer.from(a), y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
 
 export const validPassword = (value: unknown): value is string => typeof value === 'string' && value.length >= 8 && value.length <= 200;

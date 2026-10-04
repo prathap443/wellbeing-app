@@ -4,7 +4,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODEL, answerQuestion, suggestQuestions } from './coach.js';
 import { cleanText, parseContext, parseHistory, parseProfile } from './profile.js';
 import { FREE_DAILY_QUESTIONS, PLUS_DAILY_QUESTIONS, questionsRemaining, refundQuestion, takeQuestion, takeSuggestionRefresh } from './quota.js';
-import { type UserStore, hashPassword, issueToken, normaliseEmail, readToken, validPassword, verifyPassword } from './accounts.js';
+import { type UserStore, RESET_CODE_MINUTES, RESET_MAX_ATTEMPTS, hashPassword, hashResetCode, issueToken, newResetCode, normaliseEmail, readToken, sameHash, validPassword, verifyPassword } from './accounts.js';
+import { type Mailer, resetEmail } from './mailer.js';
+import { registerPages } from './pages.js';
 import { hasPlus } from './entitlements.js';
 
 export type AppOptions = {
@@ -13,6 +15,10 @@ export type AppOptions = {
   coachEnabled: boolean;
   plusCheck?: (appUserId: string | null) => Promise<boolean>;
   webDist?: string;
+  /** Sends password reset codes; null when SMTP is not configured. */
+  sendMail?: Mailer | null;
+  /** Reported by /health so you can confirm the database is connected. */
+  database?: boolean;
 };
 
 // The app generates a random ID per install. It is not tied to any identity.
@@ -46,13 +52,13 @@ function allowAuthAttempt(ip: string, now = Date.now()): boolean {
   return entry.count <= 20;
 }
 
-export function createApp({ users, sessionSecret, coachEnabled, plusCheck = (id) => hasPlus(id), webDist }: AppOptions) {
+export function createApp({ users, sessionSecret, coachEnabled, plusCheck = (id) => hasPlus(id), webDist, sendMail = null, database = false }: AppOptions) {
   const app = express();
   app.set('trust proxy', true); // Replit sits behind a proxy; needed for req.ip
   app.use(express.json({ limit: '32kb' }));
 
   app.get('/health', (_req, res) => {
-    res.json({ ok: true, coach: coachEnabled, accounts: !!sessionSecret, model: MODEL, freeDailyQuestions: FREE_DAILY_QUESTIONS, plusDailyQuestions: PLUS_DAILY_QUESTIONS });
+    res.json({ ok: true, coach: coachEnabled, accounts: !!sessionSecret, database, email: !!sendMail, model: MODEL, freeDailyQuestions: FREE_DAILY_QUESTIONS, plusDailyQuestions: PLUS_DAILY_QUESTIONS });
   });
 
   // ---------- Accounts ----------
@@ -103,6 +109,65 @@ export function createApp({ users, sessionSecret, coachEnabled, plusCheck = (id)
     const user = userId ? await users.findById(userId).catch(() => null) : null;
     if (!user) return void res.status(401).json({ error: 'signed_out' });
     res.json({ user });
+  });
+
+  // ---------- Password reset: a 6-digit code by email ----------
+  // Always answers "sent" for unknown emails, so the form can't be used to find out who has an account.
+  app.post('/auth/reset/request', async (req, res) => {
+    if (!accountsReady(res)) return;
+    if (!allowAuthAttempt(req.ip ?? 'unknown')) return void res.status(429).json({ error: 'too_many_attempts' });
+    const email = normaliseEmail(req.body?.email);
+    if (!email) return void res.status(400).json({ error: 'invalid_email' });
+    if (!sendMail) return void res.status(503).json({ error: 'reset_unavailable' });
+    try {
+      const user = await users.findByEmail(email);
+      if (user) {
+        const existing = await users.getReset(email);
+        // At most one email a minute per address, so the form can't be used to flood someone's inbox.
+        const sentRecently = existing && existing.expiresAt - RESET_CODE_MINUTES * 60_000 > Date.now() - 60_000;
+        if (!sentRecently) {
+          const code = newResetCode();
+          await users.saveReset(email, hashResetCode(email, code, sessionSecret!), Date.now() + RESET_CODE_MINUTES * 60_000);
+          const { subject, text } = resetEmail(code, RESET_CODE_MINUTES);
+          await sendMail(email, subject, text);
+        }
+      }
+      res.json({ sent: true });
+    } catch (err) {
+      logError('reset-request', err);
+      res.status(502).json({ error: 'email_failed' });
+    }
+  });
+
+  app.post('/auth/reset/confirm', async (req, res) => {
+    if (!accountsReady(res)) return;
+    if (!allowAuthAttempt(req.ip ?? 'unknown')) return void res.status(429).json({ error: 'too_many_attempts' });
+    const email = normaliseEmail(req.body?.email);
+    const code = typeof req.body?.code === 'string' ? req.body.code.replace(/\s+/g, '') : '';
+    const password = req.body?.password;
+    if (!email || !/^\d{6}$/.test(code)) return void res.status(400).json({ error: 'invalid_code' });
+    if (!validPassword(password)) return void res.status(400).json({ error: 'weak_password' });
+    try {
+      const reset = await users.getReset(email);
+      if (!reset || reset.expiresAt < Date.now() || reset.attempts >= RESET_MAX_ATTEMPTS) {
+        if (reset) await users.clearReset(email);
+        return void res.status(400).json({ error: 'code_expired' });
+      }
+      if (!sameHash(reset.codeHash, hashResetCode(email, code, sessionSecret!))) {
+        const attempts = await users.bumpReset(email);
+        if (attempts >= RESET_MAX_ATTEMPTS) await users.clearReset(email);
+        return void res.status(400).json({ error: attempts >= RESET_MAX_ATTEMPTS ? 'code_expired' : 'invalid_code' });
+      }
+      const stored = await users.findByEmail(email);
+      if (!stored) return void res.status(400).json({ error: 'code_expired' });
+      await users.setPassword(stored.id, await hashPassword(password));
+      await users.clearReset(email);
+      const { passwordHash: _, ...user } = stored;
+      res.json({ user, token: issueToken(user.id, sessionSecret!) });
+    } catch (err) {
+      logError('reset-confirm', err);
+      res.status(500).json({ error: 'server_error' });
+    }
   });
 
   // Apple requires in-app account deletion (guideline 5.1.1(v)).
@@ -167,6 +232,9 @@ export function createApp({ users, sessionSecret, coachEnabled, plusCheck = (id)
       res.status(502).json({ error: 'coach_unavailable', ...status() });
     }
   });
+
+  // Public privacy policy and support pages for the App Store listing.
+  registerPages(app);
 
   // Browser preview: serve the exported web app from the same origin (see scripts/preview-web.sh).
   if (webDist) {

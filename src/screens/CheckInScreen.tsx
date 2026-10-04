@@ -81,7 +81,7 @@ export default function CheckInScreen() {
       {scale('Stress level', stress, setStress, 'Calm', 'Overwhelmed')}
       <TouchableOpacity style={styles.saveButton} onPress={saveCheckIn}><Icon name="checkmark-outline" size={20} color="#fff" /><Text style={styles.saveText}>{savedCheckIn ? 'Update today\'s check-in' : 'Save check-in'}</Text></TouchableOpacity>
       {savedCheckIn && <View style={styles.savedCard}>
-        <View style={styles.savedHeader}><Icon name="checkmark-circle" size={22} color="#34d399" /><Text style={styles.savedTitle}>Today\'s check-in saved</Text></View>
+        <View style={styles.savedHeader}><Icon name="checkmark-circle" size={22} color="#34d399" /><Text style={styles.savedTitle}>Today's check-in saved</Text></View>
         <Text style={styles.savedStats}>Sleep {savedCheckIn.sleep}/5   Energy {savedCheckIn.energy}/5   Stress {savedCheckIn.stress}/5</Text>
         <Text style={styles.recommendation}>{recommendation()}</Text>
       </View>}
