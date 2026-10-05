@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { parseEntryDate } from '../lib/dates';
+import { formatSleep, formatSteps, healthDayKey } from '../lib/health';
+import { useHealth } from '../lib/useHealth';
 
 // Everything here is read from data already saved on the device. Nothing new is collected.
 
@@ -55,6 +57,7 @@ export default function HistoryScreen() {
   const [month, setMonth] = useState(() => { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), 1); });
   const [filter, setFilter] = useState<Filter>('all');
   const [days, setDays] = useState(PAGE_DAYS);
+  const health = useHealth(navigation);
 
   const load = useCallback(async () => {
     const pairs = await AsyncStorage.multiGet(['mood_entries', 'daily_check_ins', 'journal_entries', 'habit_records']).catch(() => []);
@@ -230,6 +233,25 @@ export default function HistoryScreen() {
       <View style={styles.trendFoot}><Text style={styles.trendFootText}>14 days ago</Text><Text style={styles.trendFootText}>{trend.count} check-in{trend.count === 1 ? '' : 's'}</Text><Text style={styles.trendFootText}>Today</Text></View>
     </View>}
 
+    {/* Apple Health (iPhone only, read-only, stays on this device) */}
+    {health.available ? <>
+      <Text style={styles.section}>Sleep and steps</Text>
+      {!health.connected ? <TouchableOpacity style={styles.prompt} onPress={health.connect} accessibilityRole="button">
+        <Icon name="heart-circle-outline" size={24} color="#f472b6" />
+        <View style={styles.promptBody}>
+          <Text style={styles.promptTitle}>Connect Apple Health</Text>
+          <Text style={styles.promptText}>See your sleep and steps next to your moods. Read-only, and it stays on this phone.</Text>
+        </View>
+        <Icon name="chevron-forward" size={18} color="#64748b" />
+      </TouchableOpacity> : !health.data ? <Text style={styles.none}>Loading Apple Health…</Text> : !health.hasData ? <View style={styles.prompt}>
+        <Icon name="information-circle-outline" size={22} color="#94a3b8" />
+        <View style={styles.promptBody}>
+          <Text style={styles.promptTitle}>No sleep or step data yet</Text>
+          <Text style={styles.promptText}>If you didn't allow access, turn it on in Settings → Privacy & Security → Health → Wellbeing. Sleep needs Apple Watch or a sleep schedule in the Health app.</Text>
+        </View>
+      </View> : <HealthCharts data={health.data} />}
+    </> : null}
+
     {/* Timeline */}
     <Text style={styles.section}>Timeline</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
@@ -252,6 +274,31 @@ export default function HistoryScreen() {
     </View>)}
     {hasAnything && timeline.olderExist ? <TouchableOpacity style={styles.more} onPress={() => setDays(days + PAGE_DAYS)}><Text style={styles.moreText}>Show earlier</Text></TouchableOpacity> : null}
   </ScrollView>;
+}
+
+function HealthCharts({ data }: { data: import('../lib/health').HealthDay[] }) {
+  const sleeps = data.filter((d) => d.sleepMinutes !== null).map((d) => d.sleepMinutes!);
+  const steps = data.filter((d) => d.steps !== null).map((d) => d.steps!);
+  const avgSleep = sleeps.length ? Math.round(sleeps.reduce((a, b) => a + b, 0) / sleeps.length) : null;
+  const avgSteps = steps.length ? Math.round(steps.reduce((a, b) => a + b, 0) / steps.length) : null;
+  const stepMax = Math.max(10000, ...steps);
+  const inBedOnly = data.some((d) => d.sleepIsInBed);
+  const rows = [
+    { label: 'Time asleep', color: '#818cf8', avg: avgSleep !== null ? `avg ${formatSleep(avgSleep)}` : 'no data', value: (d: typeof data[number]) => d.sleepMinutes === null ? null : Math.min(1, d.sleepMinutes / 600) },
+    { label: 'Steps', color: '#f472b6', avg: avgSteps !== null ? `avg ${formatSteps(avgSteps)}` : 'no data', value: (d: typeof data[number]) => d.steps === null ? null : Math.min(1, d.steps / stepMax) },
+  ];
+  return <View style={styles.card}>
+    {rows.map((r) => <View key={r.label} style={styles.trendRow}>
+      <View style={styles.trendHead}><Text style={styles.trendLabel}>{r.label}</Text><Text style={[styles.trendAvg, { color: r.color }]}>{r.avg}</Text></View>
+      <View style={styles.bars}>
+        {data.map((d) => { const v = r.value(d); return <View key={healthDayKey(d.date)} style={styles.barSlot}>
+          <View style={[styles.bar, v !== null ? { height: `${Math.max(v, 0.06) * 100}%`, backgroundColor: r.color } : styles.barEmpty]} />
+        </View>; })}
+      </View>
+    </View>)}
+    <View style={styles.trendFoot}><Text style={styles.trendFootText}>14 days ago</Text><Text style={styles.trendFootText}>From Apple Health</Text><Text style={styles.trendFootText}>Today</Text></View>
+    {inBedOnly ? <Text style={styles.healthNote}>Some nights show time in bed, because no sleep stages were recorded.</Text> : null}
+  </View>;
 }
 
 function TimelineRow({ item }: { item: TimelineItem }) {
@@ -328,5 +375,6 @@ const styles = StyleSheet.create({
   emptyPrimaryText: { color: '#022c22', fontWeight: '800' }, emptySecondary: { borderWidth: 1, borderColor: '#334155', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 11 },
   emptySecondaryText: { color: '#e2e8f0', fontWeight: '700' },
   none: { color: '#64748b', textAlign: 'center', marginTop: 16 },
+  healthNote: { color: '#64748b', fontSize: 12, marginTop: 8, lineHeight: 17 },
   more: { alignItems: 'center', padding: 14 }, moreText: { color: '#6ee7b7', fontWeight: '700' },
 });

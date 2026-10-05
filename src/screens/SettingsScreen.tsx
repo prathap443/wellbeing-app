@@ -18,11 +18,13 @@ import { AppSettings, DEFAULT_SETTINGS, clearAllData, exportAllData, loadSetting
 import { disableDailyReminder, enableDailyReminder, formatHour } from '../lib/reminders';
 import { useSession } from '../lib/session';
 import { accountsAvailable } from '../lib/account';
+import { useHealth } from '../lib/useHealth';
 
 const REMINDER_HOURS = [8, 12, 18, 20, 22];
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
+  const health = useHealth(navigation);
   const { user, plus } = useSession();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
@@ -200,6 +202,17 @@ export default function SettingsScreen() {
           toggleAppLock,
           'lock-closed-outline'
         )}
+        {health.available ? settingRow(
+          'Apple Health',
+          health.connected ? 'Showing sleep and steps in History. Stays on this phone.' : 'Show your sleep and steps in History',
+          health.connected,
+          (on) => {
+            if (on) { health.connect(); return; }
+            health.disconnect();
+            Alert.alert('Apple Health disconnected', 'Wellbeing has stopped reading your Health data. To remove its access completely, go to Settings → Privacy & Security → Health → Wellbeing.');
+          },
+          'heart-outline'
+        ) : null}
       </View>
 
       {/* Support */}

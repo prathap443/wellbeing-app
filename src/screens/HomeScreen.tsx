@@ -17,6 +17,8 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 import { calculateStreaks } from '../lib/dates';
 import { isCoachConfigured } from '../lib/coach';
 import { useSession } from '../lib/session';
+import { formatSleep, formatSteps } from '../lib/health';
+import { useHealth } from '../lib/useHealth';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -73,6 +75,7 @@ const MOOD_ICONS: Record<string, string> = {
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const health = useHealth(navigation, 2);
   const { plus } = useSession();
   const [mood, setMood] = useState<string | null>(null);
   const [note, setNote] = useState<string>('');
@@ -199,6 +202,19 @@ export default function HomeScreen() {
         </TouchableOpacity>
       ) : null}
 
+      {health.connected && health.hasData && health.data ? (() => {
+        const today = health.data[health.data.length - 1];
+        const parts = [
+          today.sleepMinutes !== null ? `Last night ${formatSleep(today.sleepMinutes)}` : null,
+          today.steps !== null ? `Today ${formatSteps(today.steps)} steps` : null,
+        ].filter(Boolean);
+        return parts.length ? <TouchableOpacity style={styles.healthCard} onPress={() => (navigation as any).navigate('History')} accessibilityRole="button" accessibilityLabel={`${parts.join(', ')}. Open History`}>
+          <Icon name="heart-circle-outline" size={20} color="#f472b6" />
+          <Text style={styles.healthText}>{parts.join('  ·  ')}</Text>
+          <Icon name="chevron-forward-outline" size={16} color="#64748b" />
+        </TouchableOpacity> : null;
+      })() : null}
+
       <View style={styles.toolsSection}>
         <Text style={styles.sectionTitle}>Wellbeing tools</Text>
         <View style={styles.toolGrid}>
@@ -305,6 +321,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  healthCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#1e293b', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginHorizontal: 20, marginTop: 12 },
+  healthText: { flex: 1, color: '#e2e8f0', fontSize: 13, fontWeight: '600' },
   container: {
     flexGrow: 1,
     backgroundColor: '#0f172a',

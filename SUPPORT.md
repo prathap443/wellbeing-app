@@ -30,6 +30,9 @@ Yes. Use **Settings → Export Data** to share a copy of everything stored on yo
 **What does the AI coach see?**
 Only your quiz answers, optional first name, recent mood ratings and check-in scores, and the questions you ask. Never your notes, journal or contacts. See the [Privacy Policy](https://wellbeing-app.replit.app/privacy) for details.
 
+**How do I connect or disconnect Apple Health?**
+Turn on **Settings → Apple Health** in the app, then choose what to allow. Sleep needs an Apple Watch or a sleep schedule in the Health app. To remove access completely, go to iPhone **Settings → Privacy & Security → Health → Wellbeing**. Your Health data never leaves your iPhone.
+
 **How many coach questions do I get?**
 5 a day on the free plan and 30 a day with Wellbeing Plus. The count resets every day.
 

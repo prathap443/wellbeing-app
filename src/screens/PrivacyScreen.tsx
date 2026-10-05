@@ -5,7 +5,8 @@ import React from 'react';
 const SECTIONS = [
   ['Summary', 'Your moods, check-ins, journal, plans, habits, therapy notes and contacts are stored only on this device. The AI coach and accounts are optional. We do not sell your data, show ads, or use analytics or tracking.'],
   ['What stays on your device', 'Mood entries, check-ins, journal reflections, plans, habits, meditation progress, therapy companion notes, trusted contacts and settings are saved in this app’s private storage. We cannot access them. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.'],
-  ['AI coach (optional)', 'Only after you agree, we send your quiz answers, optional first name, mood ratings from the last two weeks, latest sleep, energy and stress scores, and your question (plus up to three earlier questions and replies from today) to our server and to Anthropic, which provides the Claude AI model, to generate a reply. Your notes, journal, therapy notes and contacts are never sent. We do not store or log questions or replies. Anthropic does not use this data to train its models and may keep it for a limited period for safety monitoring. A random install ID, not linked to you, enforces the daily question limit.'],
+  ['Apple Health (optional)', 'If you connect Apple Health, the app reads your steps, walking distance and sleep to show them in History and on Home. It never writes to Apple Health. This data stays on your iPhone: it is never sent to our server, the AI coach or anyone else, and never used for advertising. Turn it off in Settings → Apple Health; remove access in iPhone Settings → Privacy & Security → Health → Wellbeing.'],
+  ['AI coach (optional)', 'Only after you agree, we send your quiz answers, optional first name, mood ratings from the last two weeks, latest sleep, energy and stress scores, and your question (plus up to three earlier questions and replies from today) to our server and to Anthropic, which provides the Claude AI model, to generate a reply. Your notes, journal, therapy notes, contacts and Apple Health data are never sent. We do not store or log questions or replies. Anthropic does not use this data to train its models and may keep it for a limited period for safety monitoring. A random install ID, not linked to you, enforces the daily question limit.'],
   ['Account (optional)', 'If you create an account, we store your email, optional first name and a securely hashed password, only to sign you in and keep Wellbeing Plus on your devices. Password reset codes are emailed through Google, stored hashed and expire after 15 minutes. Delete your account any time in Settings → Account → Delete account.'],
   ['Subscriptions', 'Wellbeing Plus is sold through the App Store. Apple processes payment; we never see your card details. RevenueCat confirms your subscription status and receives an anonymous app user ID (or your account ID if signed in) and your purchase history for this app.'],
   ['Who processes data for us', 'Anthropic (AI coach), Replit and Neon (our server and account database), RevenueCat (subscriptions), Google (reset emails) and Apple (App Store). They may process data in the United States under their data protection terms, including Standard Contractual Clauses where required.'],
@@ -19,7 +20,7 @@ const SECTIONS = [
 
 export default function PrivacyScreen() {
   return <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.updated}>Last updated 4 October 2026</Text>
+    <Text style={styles.updated}>Last updated 5 October 2026</Text>
     {SECTIONS.map(([title, body]) => <React.Fragment key={title}><Text style={styles.heading}>{title}</Text><Text style={styles.body}>{body}</Text></React.Fragment>)}
   </ScrollView>;
 }

@@ -146,3 +146,22 @@ Choose "Yes, we collect data". No data is used for tracking.
 - [ ] TestFlight: sandbox purchase of Plus works and the coach shows 30 questions
 - [ ] Screenshots uploaded (6.5" set)
 - [ ] EU and Swiss representative appointed if launching in those countries
+
+## Version 1.1 – Apple Health
+
+**What's New in This Version**
+
+```
+• Apple Health: see your sleep and steps next to your moods (optional, read-only, stays on your iPhone)
+• History redesign: mood calendar, weekly summary and 14-day sleep, energy and stress trends
+• Therapy companion: start a fresh plan after each session
+• Fixes, including a crash when leaving a meditation
+```
+
+**Add to the review notes** (paste above the existing notes)
+
+```
+APPLE HEALTH (new in 1.1, optional, read-only): Settings > "Apple Health" or History > "Connect Apple Health" shows Apple's permission sheet for steps, walking distance and sleep analysis. The data is shown in History ("Sleep and steps" charts) and as a summary on Home. It never leaves the device: it is not sent to our server, the AI coach or any third party, not used for advertising, and not stored in iCloud. The app does not write to Apple Health. If access is denied, the app shows how to enable it and all other features work normally.
+```
+
+App Privacy answers do not change: Apple Health data is processed only on the device, so it is not "collected" under Apple's definitions.

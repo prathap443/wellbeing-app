@@ -1,6 +1,6 @@
 # Wellbeing: Mood & Calm – Privacy Policy
 
-**Last updated: 4 October 2026**
+**Last updated: 5 October 2026**
 
 This policy explains what the Wellbeing app ("Wellbeing", "we") collects, why, and the choices you have. Wellbeing is provided by Prathap Adicherla, who is the data controller. Contact: [wellbeingsupport247@gmail.com](mailto:wellbeingsupport247@gmail.com).
 
@@ -15,6 +15,10 @@ This policy explains what the Wellbeing app ("Wellbeing", "we") collects, why, a
 
 Mood entries, daily check-ins, journal reflections, mental state plans, habits and goals, meditation progress, therapy companion notes, trusted contacts and settings are saved in the app's private storage on your device. We have no access to them. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.
 
+## Apple Health (optional, iPhone)
+
+If you choose to connect Apple Health, the app reads your steps, walking distance and sleep to show them in History and on the Home screen. This is read-only: the app never writes to Apple Health. Health data **stays on your iPhone**: it is never sent to our server, the AI coach, Anthropic or anyone else, never used for advertising, and not stored in iCloud by the app. You can stop it at any time in **Settings → Apple Health**, and remove access completely in iPhone **Settings → Privacy & Security → Health → Wellbeing**.
+
 ## AI coach (optional)
 
 The coach only works after you agree to it in the app. When you use it, we send the following to our server and to Anthropic, which provides the Claude AI model, to generate a reply:
@@ -23,7 +27,7 @@ The coach only works after you agree to it in the app. When you use it, we send 
 - your mood ratings from the last two weeks (for example "good" or "bad", with how many days ago) and your latest sleep, energy and stress scores;
 - the question you choose, plus up to three earlier questions and replies from the same day's conversation.
 
-Your notes, journal entries, therapy companion notes and contacts are **never** sent. Our server does not store or log questions or replies. Anthropic processes this data to provide the service under its commercial terms, does not use it to train its models, and may keep it for a limited period for safety and misuse monitoring.
+Your notes, journal entries, therapy companion notes, contacts and Apple Health data are **never** sent. Our server does not store or log questions or replies. Anthropic processes this data to provide the service under its commercial terms, does not use it to train its models, and may keep it for a limited period for safety and misuse monitoring.
 
 To enforce the daily question limit, the app creates a random ID for your install. It is not linked to your identity and is held only in the server's memory.
 
