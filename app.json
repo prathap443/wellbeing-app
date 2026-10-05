@@ -9,7 +9,6 @@
     "backgroundColor": "#0f172a",
     "ios": {
       "bundleIdentifier": "com.pradiconsulting.wellbeing",
-      "buildNumber": "1",
       "supportsTablet": false,
       "config": {
         "usesNonExemptEncryption": false
@@ -66,7 +65,7 @@
         "@kingstinct/react-native-healthkit",
         {
           "NSHealthShareUsageDescription": "Wellbeing reads your sleep, steps and walking distance to show them next to your moods in History. This data stays on your iPhone and is never shared.",
-          "NSHealthUpdateUsageDescription": false,
+          "NSHealthUpdateUsageDescription": "Wellbeing only reads your sleep and steps from Apple Health and never saves or changes any Health data.",
           "background": false
         }
       ]
