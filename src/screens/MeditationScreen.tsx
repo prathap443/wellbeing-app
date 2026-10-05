@@ -30,10 +30,14 @@ export default function MeditationScreen() {
     load();
   }, []);
 
+  // The audio library releases the native player when this screen closes, which also stops the sound.
+  // Calling the player after that throws, so every call goes through these guards and the screen
+  // never calls pause() in its own cleanup (that crashed the app when tapping back mid-practice).
+  const pauseAudio = () => { try { player.pause(); } catch { /* player already released */ } };
+  const playAudio = () => { try { player.play(); } catch { /* player already released */ } };
+
   useEffect(() => {
-    player.loop = true;
-    player.volume = 0.45;
-    return () => player.pause();
+    try { player.loop = true; player.volume = 0.45; } catch { /* player already released */ }
   }, [player]);
 
   useEffect(() => {
@@ -41,7 +45,7 @@ export default function MeditationScreen() {
     const interval = setInterval(() => setRemaining((current) => {
       if (current > 1) return current - 1;
       setPlaying(false);
-      player.pause();
+      pauseAudio();
       setCompleted((currentCompleted) => {
         const next = currentCompleted + 1;
         AsyncStorage.setItem('meditation_completed', String(next));
@@ -52,14 +56,14 @@ export default function MeditationScreen() {
     return () => clearInterval(interval);
   }, [playing, player, selected]);
 
-  const chooseSession = (session: Session) => { player.pause(); setPlaying(false); setSelected(session); setRemaining(session.minutes * 60); };
+  const chooseSession = (session: Session) => { pauseAudio(); setPlaying(false); setSelected(session); setRemaining(session.minutes * 60); };
   const toggleFavourite = async () => { const next = favourites.includes(selected.id) ? favourites.filter((id) => id !== selected.id) : [...favourites, selected.id]; setFavourites(next); await AsyncStorage.setItem('meditation_favourites', JSON.stringify(next)); };
   const togglePractice = () => {
     if (playing) {
-      player.pause();
+      pauseAudio();
       setPlaying(false);
     } else {
-      player.play();
+      playAudio();
       setPlaying(true);
     }
   };
