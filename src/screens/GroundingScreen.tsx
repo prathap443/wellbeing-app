@@ -35,7 +35,7 @@ export default function GroundingScreen() {
     <View style={styles.progress}>{STEPS.map((_, index) => <View key={index} style={[styles.progressDot, index <= step && styles.progressDotActive]} />)}</View>
     {finished ? <>
       <View style={styles.card}><Icon name="checkmark-circle-outline" size={40} color="#60a5fa" /><Text style={styles.cardTitle}>You're here, now</Text><Text style={styles.cardText}>You moved through all five senses.</Text></View>
-      {session.finishedId ? <FeedbackCard sessionId={session.finishedId} /> : null}
+      {session.finishedId ? <FeedbackCard key={session.finishedId} sessionId={session.finishedId} /> : null}
       <TouchableOpacity style={styles.button} onPress={again}><Text style={styles.buttonText}>Start again</Text><Icon name="refresh-outline" size={20} color="#082f49" /></TouchableOpacity>
     </> : <>
       <View style={styles.card}><Text style={styles.count}>{current.count}</Text><Text style={styles.cardTitle}>{current.title}</Text><Text style={styles.cardText}>{current.text}</Text></View>

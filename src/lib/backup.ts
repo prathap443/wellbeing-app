@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DATA_KEYS } from './storage';
-import { isActivityRecord } from './activity';
+import { normalizeActivities } from './activity';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -14,11 +14,10 @@ const MAX_BYTES = 5 * 1024 * 1024;
 /** Daily coach state and the one-time account prompt are not worth restoring. Settings are excluded too:
  *  reminders and app lock must be switched on on the device itself. */
 export const BACKUP_KEYS: string[] = DATA_KEYS.filter((k) => k !== 'coach_session' && k !== 'account_prompt_seen');
-const LIST_KEYS = new Set(['mood_entries', 'daily_check_ins', 'journal_entries', 'mental_state_plans', 'meditation_favourites', 'trusted_contacts', 'activity_log']);
-const OBJECT_KEYS = new Set(['habit_records', 'therapy_companion_plan', 'coach_profile']);
 
 type Data = Record<string, unknown>;
-export type ParsedBackup = { exportedAt: string; data: Data; summary: { label: string; count: number }[] };
+export type ParsedBackup = { exportedAt: string; data: Data; summary: { label: string; count: number }[]; skipped: number };
+export type RestoreResult = { ok: true } | { ok: false; rolledBack: boolean };
 export class BackupError extends Error {}
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -64,6 +63,61 @@ export async function pickBackupFile(): Promise<string | null> {
   return new File(asset.uri).text();
 }
 
+// ---------- Validation: only accept records shaped the way each screen saves them ----------
+const MOODS = ['great', 'good', 'okay', 'bad', 'very_bad'];
+const HABITS = ['sleep', 'water', 'movement', 'meditation', 'connection'];
+const MEDITATIONS = ['arrive', 'release', 'sleep', 'kindness'];
+const str = (v: unknown, max = 5000) => typeof v === 'string' && v.length <= max;
+const nonEmpty = (v: unknown, max = 5000) => str(v, max) && (v as string).trim().length > 0;
+const optStr = (v: unknown, max = 5000) => v === undefined || str(v, max);
+const int = (v: unknown, min: number, max: number) => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;
+const dateStr = (v: unknown) => nonEmpty(v, 40);
+const isoOpt = (v: unknown) => v === undefined || (str(v, 40) && !Number.isNaN(Date.parse(v as string)));
+const strArr = (v: unknown, allowed?: string[]) => Array.isArray(v) && v.every((x) => str(x, 200) && (!allowed || allowed.includes(x)));
+
+type Rule = (v: unknown) => { value?: unknown; skipped: number };
+/** A list: keeps the valid records and counts the rest as skipped. */
+const list = (ok: (r: any) => boolean, max = 5000): Rule => (v) => {
+  if (!Array.isArray(v)) return { skipped: 1 };
+  const kept = v.filter(ok).slice(-max);
+  return { value: kept, skipped: v.length - kept.length };
+};
+const whole = (ok: (v: any) => boolean): Rule => (v) => (ok(v) ? { value: v, skipped: 0 } : { skipped: 1 });
+
+const RULES: Record<string, Rule> = {
+  mood_entries: list((r) => isPlainObject(r) && MOODS.includes(r.mood as string) && dateStr(r.date) && optStr(r.note, 2000) && isoOpt(r.timestamp)),
+  daily_check_ins: list((r) => isPlainObject(r) && int(r.sleep, 1, 5) && int(r.energy, 1, 5) && int(r.stress, 1, 5) && dateStr(r.date) && isoOpt(r.createdAt)),
+  journal_entries: list((r) => isPlainObject(r) && dateStr(r.date)
+    && ['text', 'situation', 'thought', 'perspective', 'nextStep'].every((k) => optStr(r[k]))
+    && (r.feelings === undefined || strArr(r.feelings))
+    && ['text', 'situation', 'thought', 'perspective', 'nextStep'].some((k) => nonEmpty(r[k]))),
+  mental_state_plans: list((r) => isPlainObject(r) && dateStr(r.date) && int(r.capacity, 1, 5) && isoOpt(r.updatedAt)
+    && Array.isArray(r.tasks) && (r.tasks as any[]).every((t) => isPlainObject(t) && nonEmpty(t.id, 100) && nonEmpty(t.title, 300) && int(t.effort, 1, 3) && typeof t.done === 'boolean'), 60),
+  trusted_contacts: list((r) => nonEmpty(r, 200) || (isPlainObject(r) && nonEmpty(r.name, 200) && optStr(r.phone, 40)), 50),
+  meditation_favourites: list((r) => MEDITATIONS.includes(r), 10),
+  activity_log: (v) => {
+    if (!Array.isArray(v)) return { skipped: 1 };
+    const kept = normalizeActivities(v);
+    return { value: kept, skipped: v.length - kept.length };
+  },
+  habit_records: (v) => {
+    if (!isPlainObject(v)) return { skipped: 1 };
+    const out: Record<string, string[]> = {};
+    let skipped = 0;
+    for (const [day, ids] of Object.entries(v)) {
+      if (nonEmpty(day, 40) && strArr(ids, HABITS)) out[day] = ids as string[]; else skipped++;
+    }
+    return { value: out, skipped };
+  },
+  weekly_habit_goal: whole((v) => int(v, 1, 7)),
+  meditation_completed: whole((v) => int(v, 0, 1_000_000)),
+  sleep_reset_habits: whole((v) => isPlainObject(v) && nonEmpty(v.night, 20) && strArr(v.done)),
+  therapy_companion_plan: whole((v) => isPlainObject(v) && optStr(v.topic) && optStr(v.questions)
+    && (v.actions === undefined || (Array.isArray(v.actions) && (v.actions as any[]).every((a) => isPlainObject(a) && nonEmpty(a.id, 100) && nonEmpty(a.text, 300) && typeof a.done === 'boolean')))),
+  coach_profile: whole((v) => isPlainObject(v) && Object.values(v).every((x) => str(x, 200) || strArr(x))),
+  coach_consent: whole((v) => v === true || v === 'true'),
+};
+
 /** Validates a backup and summarises what it contains. Unknown keys and malformed records are dropped. */
 export function parseBackup(text: string): ParsedBackup {
   if (text.length > MAX_BYTES) throw new BackupError('That file is too large to be a Wellbeing backup.');
@@ -75,18 +129,14 @@ export function parseBackup(text: string): ParsedBackup {
   if (version !== 1) throw new BackupError('This backup was made by a newer version of Wellbeing. Update the app, then try again.');
 
   const data: Data = {};
+  let skipped = 0;
   for (const key of BACKUP_KEYS) {
     if (!(key in json.data)) continue;
-    let value = (json.data as Data)[key];
-    if (LIST_KEYS.has(key)) {
-      if (!Array.isArray(value)) continue;
-      value = key === 'activity_log' ? value.filter(isActivityRecord)
-        : key === 'meditation_favourites' ? value.filter((v) => typeof v === 'string')
-        : value.filter(isPlainObject);
-    } else if (OBJECT_KEYS.has(key)) {
-      if (!isPlainObject(value)) continue;
-    } else if (value === null || (typeof value === 'object' && !isPlainObject(value) && !Array.isArray(value))) continue;
-    data[key] = value;
+    const rule = RULES[key];
+    if (!rule) continue;
+    const result = rule((json.data as Data)[key]);
+    skipped += result.skipped;
+    if (result.value !== undefined) data[key] = result.value;
   }
   const len = (k: string) => (Array.isArray(data[k]) ? (data[k] as unknown[]).length : 0);
   const summary = [
@@ -100,18 +150,38 @@ export function parseBackup(text: string): ParsedBackup {
   ].filter((s) => s.count > 0);
   if (!Object.keys(data).length) throw new BackupError('This backup does not contain any data to restore.');
   const exportedAt = typeof json.exportedAt === 'string' && !Number.isNaN(Date.parse(json.exportedAt)) ? json.exportedAt : '';
-  return { exportedAt, data, summary };
+  return { exportedAt, data, summary, skipped };
+}
+
+/** Writes the given values and removes the given keys; if anything fails, puts back exactly what was there. */
+async function writeSafely(sets: [string, string][], removes: string[]): Promise<RestoreResult> {
+  const snapshot = await AsyncStorage.multiGet(BACKUP_KEYS);
+  try {
+    if (sets.length) await AsyncStorage.multiSet(sets); // write the new data first...
+    if (removes.length) await AsyncStorage.multiRemove(removes); // ...and only then remove what the backup doesn't have
+    return { ok: true };
+  } catch {
+    try {
+      await AsyncStorage.multiRemove(BACKUP_KEYS);
+      const keep = snapshot.filter(([, v]) => v != null) as [string, string][];
+      if (keep.length) await AsyncStorage.multiSet(keep);
+      return { ok: false, rolledBack: true };
+    } catch {
+      return { ok: false, rolledBack: false };
+    }
+  }
 }
 
 /**
  * merge: keeps everything on this phone and adds what's missing from the backup (records already
  * present are not duplicated). replace: this phone's data is replaced by the backup's.
+ * Either way, a failure rolls back to the data as it was before, and the result says what happened.
  */
-export async function applyBackup(backup: ParsedBackup, mode: 'merge' | 'replace'): Promise<void> {
+export async function applyBackup(backup: ParsedBackup, mode: 'merge' | 'replace'): Promise<RestoreResult> {
+  const finalValue = (key: string, v: unknown) => (key === 'activity_log' && Array.isArray(v) ? normalizeActivities(v) : v);
   if (mode === 'replace') {
-    await AsyncStorage.multiRemove(BACKUP_KEYS);
-    await AsyncStorage.multiSet(Object.entries(backup.data).map(([k, v]) => [k, toStored(v)] as [string, string]));
-    return;
+    const sets = Object.entries(backup.data).map(([k, v]) => [k, toStored(finalValue(k, v))] as [string, string]);
+    return writeSafely(sets, BACKUP_KEYS.filter((k) => !(k in backup.data)));
   }
   const current = new Map((await AsyncStorage.multiGet(Object.keys(backup.data))).map(([k, raw]) => [k, fromStored(raw)]));
   const writes: [string, string][] = [];
@@ -119,10 +189,11 @@ export async function applyBackup(backup: ParsedBackup, mode: 'merge' | 'replace
     const local = current.get(key);
     let merged: unknown;
     if (local == null) merged = incoming;
-    else if (Array.isArray(local) && Array.isArray(incoming)) {
-      const keyOf = key === 'activity_log' ? (r: any) => r.id : (r: unknown) => JSON.stringify(r);
-      const seen = new Set(local.map(keyOf));
-      merged = [...local, ...incoming.filter((r) => !seen.has(keyOf(r)))];
+    else if (key === 'activity_log' && Array.isArray(local) && Array.isArray(incoming)) {
+      merged = normalizeActivities([...local, ...incoming]); // de-duplicate by id (this phone wins), sort, keep newest 500
+    } else if (Array.isArray(local) && Array.isArray(incoming)) {
+      const seen = new Set(local.map((r) => JSON.stringify(r)));
+      merged = [...local, ...incoming.filter((r) => !seen.has(JSON.stringify(r)))];
     } else if (key === 'habit_records' && isPlainObject(local) && isPlainObject(incoming)) {
       const out: Record<string, unknown> = { ...local };
       for (const [day, ids] of Object.entries(incoming)) {
@@ -137,5 +208,5 @@ export async function applyBackup(backup: ParsedBackup, mode: 'merge' | 'replace
     }
     writes.push([key, toStored(merged)]);
   }
-  if (writes.length) await AsyncStorage.multiSet(writes);
+  return writeSafely(writes, []);
 }

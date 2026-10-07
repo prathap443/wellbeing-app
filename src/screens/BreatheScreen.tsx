@@ -37,7 +37,7 @@ export default function BreatheScreen() {
   // Timer ran out: the session is finished.
   useEffect(() => { if (running && left === 0) end(); }, [left, running]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const toggle = () => { if (!running) session.begin(); setRunning((r) => !r); };
+  const toggle = () => { if (running) session.pause(); else session.begin(); setRunning((r) => !r); };
   const end = () => { setRunning(false); setFinished(true); session.finish(); };
   const again = () => { setFinished(false); setPhase(0); setSeconds(4); setLeft(minutes * 60); };
   const choose = (m: number) => { setMinutes(m); setLeft(m * 60); };
@@ -47,7 +47,7 @@ export default function BreatheScreen() {
 
     {finished ? <>
       <View style={styles.doneOrb}><Icon name="checkmark" size={46} color="#5eead4" /><Text style={styles.phase}>Well done</Text></View>
-      {session.finishedId ? <FeedbackCard sessionId={session.finishedId} /> : null}
+      {session.finishedId ? <FeedbackCard key={session.finishedId} sessionId={session.finishedId} /> : null}
       <TouchableOpacity style={styles.secondary} onPress={again}><Icon name="refresh-outline" size={18} color="#e2e8f0" /><Text style={styles.secondaryText}>Breathe again</Text></TouchableOpacity>
     </> : <>
       {!started ? <View style={styles.lengths}>

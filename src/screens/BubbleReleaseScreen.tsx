@@ -147,7 +147,8 @@ export default function BubbleReleaseScreen() {
   const onPop = useCallback(() => { if (mounted.current) setReleased((r) => r + 1); }, []);
   const onLayout = (e: LayoutChangeEvent) => { const { width, height } = e.nativeEvent.layout; setArea({ width, height }); };
 
-  const keepGoing = () => { setElapsed(0); setFinished(false); };
+  // Each round is its own session: a fresh id, so the next rating can't overwrite this one.
+  const keepGoing = () => { setElapsed(0); setFinished(false); session.begin(); };
   const breathScale = breath.interpolate({ inputRange: [0, 1], outputRange: [0.78, 1.12] });
   const breathGlow = breath.interpolate({ inputRange: [0, 1], outputRange: [0.18, 0.36] });
   const progress = Math.min(1, elapsed / SESSION_SECONDS);
@@ -187,7 +188,7 @@ export default function BubbleReleaseScreen() {
         <Icon name="sparkles-outline" size={28} color="#6ee7b7" />
         <Text style={styles.cardTitle}>Nice reset</Text>
         <Text style={styles.cardText}>{released > 0 ? `You let go of ${released} bubble${released === 1 ? '' : 's'} in three minutes.` : 'You gave yourself three calm minutes.'} Take one slow breath before you move on.</Text>
-        {session.finishedId ? <FeedbackCard sessionId={session.finishedId} /> : null}
+        {session.finishedId ? <FeedbackCard key={session.finishedId} sessionId={session.finishedId} /> : null}
         <View style={styles.cardButtons}>
           <TouchableOpacity style={styles.secondary} onPress={keepGoing} accessibilityRole="button"><Text style={styles.secondaryText}>Keep going</Text></TouchableOpacity>
           <TouchableOpacity style={styles.primary} onPress={() => navigation.goBack()} accessibilityRole="button"><Text style={styles.primaryText}>Done</Text></TouchableOpacity>

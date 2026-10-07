@@ -70,6 +70,7 @@ export default function MeditationScreen() {
   const toggleFavourite = async () => { const next = favourites.includes(selected.id) ? favourites.filter((id) => id !== selected.id) : [...favourites, selected.id]; setFavourites(next); await AsyncStorage.setItem('meditation_favourites', JSON.stringify(next)); };
   const togglePractice = () => {
     if (playing) {
+      session.pause();
       pauseAudio();
       setPlaying(false);
     } else {
@@ -88,7 +89,7 @@ export default function MeditationScreen() {
       <Text style={styles.timer}>{time}</Text><TouchableOpacity style={[styles.playButton, { backgroundColor: selected.color }]} onPress={togglePractice}><Icon name={playing ? 'pause-outline' : 'play-outline'} size={21} color="#fff" /><Text style={styles.playText}>{playing ? 'Pause' : 'Begin practice'}</Text></TouchableOpacity>
     </View>
     <View style={styles.stats}><Icon name="checkmark-circle-outline" size={21} color="#5eead4" /><Text style={styles.statsText}>{completed} practices completed</Text></View>
-    {session.finishedId ? <FeedbackCard sessionId={session.finishedId} /> : null}
+    {session.finishedId ? <FeedbackCard key={session.finishedId} sessionId={session.finishedId} /> : null}
     <Text style={styles.sectionTitle}>Choose a practice</Text>
     {SESSIONS.map((session) => <TouchableOpacity key={session.id} style={[styles.session, selected.id === session.id && { borderColor: session.color }]} onPress={() => chooseSession(session)}><View style={[styles.listIcon, { backgroundColor: session.color + '22' }]}><Icon name={session.icon as any} size={21} color={session.color} /></View><View style={styles.sessionInfo}><Text style={styles.sessionTitle}>{session.title}</Text><Text style={styles.sessionMeta}>{session.category} - {session.minutes} min</Text></View><Icon name="chevron-forward-outline" size={19} color="#64748b" /></TouchableOpacity>)}
     <View style={styles.audioNote}><Icon name="musical-notes-outline" size={20} color="#93c5fd" /><View style={styles.audioNoteContent}><Text style={styles.audioNoteTitle}>Ambient sound</Text><Text style={styles.audioNoteText}>A soft, calming soundscape plays gently when you begin a practice.</Text></View></View>

@@ -1,4 +1,4 @@
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, AppState, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -17,8 +17,21 @@ export function readTonight(stored: string | null, now = new Date()): string[] {
 
 export default function SleepResetScreen() {
   const [completed, setCompleted] = useState<string[]>([]);
-  useEffect(() => { AsyncStorage.getItem('sleep_reset_habits').then((stored) => setCompleted(readTonight(stored))).catch(() => undefined); }, []);
-  const toggle = async (habit: string) => { const next = completed.includes(habit) ? completed.filter((item) => item !== habit) : [...completed, habit]; setCompleted(next); await AsyncStorage.setItem('sleep_reset_habits', JSON.stringify({ night: nightKey(), done: next })); };
+  // Re-read when the screen opens and whenever the app returns to the foreground, so a screen left open
+  // overnight doesn't carry last night's ticks into tonight.
+  useEffect(() => {
+    const refresh = () => { AsyncStorage.getItem('sleep_reset_habits').then((stored) => setCompleted(readTonight(stored))).catch(() => undefined); };
+    refresh();
+    const sub = AppState.addEventListener('change', (state) => { if (state === 'active') refresh(); });
+    return () => sub.remove();
+  }, []);
+  // Each tap starts from what is saved for tonight (never from a stale list on screen).
+  const toggle = async (habit: string) => {
+    const tonight = readTonight(await AsyncStorage.getItem('sleep_reset_habits').catch(() => null));
+    const next = tonight.includes(habit) ? tonight.filter((item) => item !== habit) : [...tonight, habit];
+    setCompleted(next);
+    await AsyncStorage.setItem('sleep_reset_habits', JSON.stringify({ night: nightKey(), done: next }));
+  };
   return <ScrollView contentContainerStyle={styles.container}>
     <Icon name="moon-outline" size={30} color="#c4b5fd" /><Text style={styles.title}>Sleep reset</Text><Text style={styles.subtitle}>A short routine can help your body recognise it is time to wind down.</Text>
     <View style={styles.scoreCard}><Text style={styles.score}>{completed.length}/{HABITS.length}</Text><Text style={styles.scoreText}>habits completed tonight</Text></View>

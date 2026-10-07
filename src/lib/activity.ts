@@ -65,11 +65,27 @@ export async function loadActivities(): Promise<ActivityRecord[]> {
   }
 }
 
+/**
+ * The single place history is shaped: valid records only, one record per id (the first one wins, so
+ * this phone's copy beats an imported duplicate), oldest to newest by start time, newest 500 kept.
+ * Used for every write and for backup imports, so the cap and the ordering always hold.
+ */
+export function normalizeActivities(records: unknown[]): ActivityRecord[] {
+  const seen = new Set<string>();
+  const unique: ActivityRecord[] = [];
+  for (const r of records) {
+    if (!isActivityRecord(r) || seen.has(r.id)) continue;
+    seen.add(r.id);
+    unique.push(r);
+  }
+  return unique.sort((a, b) => Date.parse(a.startedAt) - Date.parse(b.startedAt)).slice(-MAX_RECORDS);
+}
+
 // Writes are queued so a "finish" and a "rate" fired close together can't overwrite each other.
 let queue: Promise<unknown> = Promise.resolve();
 function update(change: (records: ActivityRecord[]) => ActivityRecord[]): Promise<void> {
   const run = queue.then(async () => {
-    const next = change(await loadActivities()).slice(-MAX_RECORDS);
+    const next = normalizeActivities(change(await loadActivities()));
     await AsyncStorage.setItem(ACTIVITY_KEY, JSON.stringify(next));
   });
   queue = run.catch(() => undefined);
@@ -102,7 +118,7 @@ export function rateActivity(id: string, after: Rating): Promise<void> {
 export type Suggestable = Exclude<Tool, 'sleep_reset'>;
 export const TOOL_INFO: Record<Suggestable, { title: string; route: string; icon: string; minutes: number[] }> = {
   breathe: { title: 'Box breathing', route: 'Breathe', icon: 'leaf-outline', minutes: [1, 3, 5] },
-  grounding: { title: '5-4-3-2-1 grounding', route: 'Grounding', icon: 'water-outline', minutes: [3, 5] },
+  grounding: { title: '5-4-3-2-1 grounding', route: 'Grounding', icon: 'water-outline', minutes: [1, 3, 5] },
   bubbles: { title: 'Bubble release', route: 'BubbleRelease', icon: 'ellipse-outline', minutes: [3, 5] },
   meditation: { title: 'A short meditation', route: 'Meditation', icon: 'headset-outline', minutes: [5] },
 };
@@ -131,31 +147,45 @@ export function evidenceFor(records: ActivityRecord[], tool: Tool, feeling: Feel
   return { rated: rated.length, helped, worse, score };
 }
 
-export type Suggestion = { tool: Suggestable; title: string; route: string; icon: string; reason: string; personal: boolean };
+export type Suggestion = {
+  tool: Suggestable; title: string; route: string; icon: string; reason: string; personal: boolean;
+  /** Length to open the tool with. Differs from the chosen time when suggesting a longer option. */
+  minutes: number;
+  /** True when this is offered despite the person's own ratings saying it hasn't helped. */
+  ratedUnhelpful: boolean;
+};
 
 export function suggest(records: ActivityRecord[], feeling: Feeling, minutes: number): { primary: Suggestion; alternative: Suggestion | null } {
   const fits = (t: Suggestable) => TOOL_INFO[t].minutes.includes(minutes) || (minutes >= 5 && TOOL_INFO[t].minutes.some((m) => m <= minutes));
-  const candidates = DEFAULT_ORDER[feeling].filter(fits);
-  const pool = candidates.length ? candidates : DEFAULT_ORDER[feeling];
-
-  const withEvidence = pool.map((tool) => ({ tool, ev: evidenceFor(records, tool, feeling) }));
-  const enough = (e: Evidence) => e.rated >= MIN_RATINGS;
-  // Personal winners: enough ratings and, on balance, helpful. Ties go to more evidence.
-  const personal = withEvidence.filter((x) => enough(x.ev) && x.ev.score > 0)
-    .sort((a, b) => b.ev.score - a.ev.score || b.ev.rated - a.ev.rated);
-  // Tools the person has rated as unhelpful (enough data, score <= 0) move to the back.
-  const unhelpful = new Set(withEvidence.filter((x) => enough(x.ev) && x.ev.score <= 0).map((x) => x.tool));
-  const defaults = pool.filter((t) => !unhelpful.has(t) && !personal.some((p) => p.tool === t));
-  const ordered: Suggestable[] = [...personal.map((p) => p.tool), ...defaults, ...pool.filter((t) => unhelpful.has(t))];
+  const all = DEFAULT_ORDER[feeling];
+  const evidence = new Map(all.map((tool) => [tool, evidenceFor(records, tool, feeling)]));
+  const enough = (t: Suggestable) => evidence.get(t)!.rated >= MIN_RATINGS;
+  const helpful = (t: Suggestable) => enough(t) && evidence.get(t)!.score > 0;
+  const unhelpful = (t: Suggestable) => enough(t) && evidence.get(t)!.score <= 0;
+  // Ranking: tools that have helped this person (best first), then untried/undecided defaults, then rated-unhelpful.
+  const rank = (tools: Suggestable[]) => [
+    ...tools.filter(helpful).sort((a, b) => evidence.get(b)!.score - evidence.get(a)!.score || evidence.get(b)!.rated - evidence.get(a)!.rated),
+    ...tools.filter((t) => !enough(t)),
+    ...tools.filter(unhelpful),
+  ];
+  const fitting = rank(all.filter(fits));
+  const lengthFor = (t: Suggestable) => (fits(t) ? minutes : TOOL_INFO[t].minutes.find((m) => m > minutes) ?? TOOL_INFO[t].minutes[0]);
 
   const make = (tool: Suggestable): Suggestion => {
-    const ev = withEvidence.find((x) => x.tool === tool)!.ev;
+    const ev = evidence.get(tool)!;
     const info = TOOL_INFO[tool];
-    const isPersonal = enough(ev) && ev.score > 0;
-    const reason = isPersonal
-      ? `Early observation: you felt better after this in ${ev.helped} of your last ${ev.rated} sessions when ${FEELING_PHRASE[feeling]}.`
-      : `A good place to start when you're ${FEELING_PHRASE[feeling]}.`;
-    return { tool, title: info.title, route: info.route, icon: info.icon, reason, personal: isPersonal };
+    const len = lengthFor(tool);
+    let reason: string;
+    if (helpful(tool)) reason = `Early observation: you felt better after this in ${ev.helped} of your last ${ev.rated} sessions when ${FEELING_PHRASE[feeling]}.`;
+    else if (unhelpful(tool)) reason = `You've said this didn't help in ${ev.rated - ev.helped} of your last ${ev.rated} sessions when ${FEELING_PHRASE[feeling]}. It's the only option that fits ${minutes} minute${minutes === 1 ? '' : 's'}; a longer option below may suit you better.`;
+    else reason = `A good place to start when you're ${FEELING_PHRASE[feeling]}.`;
+    return { tool, title: info.title, route: info.route, icon: info.icon, reason, personal: helpful(tool), minutes: len, ratedUnhelpful: unhelpful(tool) };
   };
-  return { primary: make(ordered[0]), alternative: ordered[1] ? make(ordered[1]) : null };
+
+  const primaryTool = fitting[0] ?? rank(all)[0];
+  // Alternative: the next fitting tool that hasn't been rated unhelpful; otherwise the best option at a longer length.
+  const altTool = fitting.find((t) => t !== primaryTool && !unhelpful(t))
+    ?? rank(all.filter((t) => !fits(t) && !unhelpful(t)))[0]
+    ?? null;
+  return { primary: make(primaryTool), alternative: altTool ? make(altTool) : null };
 }

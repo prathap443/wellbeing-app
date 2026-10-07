@@ -17,7 +17,7 @@ export default function WhatHelpsCard() {
   useEffect(() => { load(); return navigation.addListener('focus', load); }, [navigation, load]);
 
   const result = feeling && minutes ? suggest(records, feeling, minutes) : null;
-  const open = (s: Suggestion) => navigation.navigate(s.route, { feeling, minutes });
+  const open = (s: Suggestion) => navigation.navigate(s.route, { feeling, minutes: s.minutes });
 
   return <View style={styles.card}>
     <View style={styles.head}>
@@ -46,10 +46,10 @@ export default function WhatHelpsCard() {
           <Text style={styles.pickTitle}>Try {result.primary.title.charAt(0).toLowerCase() + result.primary.title.slice(1)}</Text>
           <Text style={styles.pickReason}>{result.primary.reason}</Text>
         </View>
-        <Icon name="play-circle" size={30} color="#5eead4" />
+        <Icon name="play-circle" size={30} color={result.primary.ratedUnhelpful ? '#64748b' : '#5eead4'} />
       </TouchableOpacity>
       {result.alternative ? <TouchableOpacity onPress={() => open(result.alternative!)} style={styles.alt} accessibilityRole="button">
-        <Text style={styles.altText}>Or try <Text style={styles.altLink}>{result.alternative.title}</Text></Text>
+        <Text style={styles.altText}>{result.alternative.minutes !== minutes ? `Or, with ${result.alternative.minutes} minutes, try ` : 'Or try '}<Text style={styles.altLink}>{result.alternative.title}</Text></Text>
       </TouchableOpacity> : null}
     </> : null}
   </View>;

@@ -89,14 +89,14 @@ export default function SettingsScreen() {
       return;
     }
     const when = backup.exportedAt ? `Backup from ${new Date(backup.exportedAt).toLocaleString()}` : 'Wellbeing backup';
-    const preview = `${when}\n\n${backup.summary.map((s) => `${s.label}: ${s.count}`).join('\n') || 'Settings and plans only'}\n\nMerge keeps everything on this phone and adds what is missing. Replace swaps this phone's data for the backup.`;
+    const skippedNote = backup.skipped ? `\n\n${backup.skipped} damaged or unrecognised item${backup.skipped === 1 ? '' : 's'} will be skipped.` : '';
+    const preview = `${when}\n\n${backup.summary.map((s) => `${s.label}: ${s.count}`).join('\n') || 'Settings and plans only'}${skippedNote}\n\nMerge keeps everything on this phone and adds what is missing. Replace swaps this phone's data for the backup.`;
     const run = async (mode: 'merge' | 'replace') => {
-      try {
-        await applyBackup(backup, mode);
-        Alert.alert('Restored', 'Your backup has been restored. Fully close and reopen the app to refresh every screen.');
-      } catch {
-        Alert.alert('Restore failed', 'Nothing was changed. Please try again.');
-      }
+      let result: Awaited<ReturnType<typeof applyBackup>>;
+      try { result = await applyBackup(backup, mode); } catch { result = { ok: false, rolledBack: false }; }
+      if (result.ok) Alert.alert('Restored', 'Your backup has been restored. Fully close and reopen the app to refresh every screen.');
+      else if (result.rolledBack) Alert.alert('Restore failed', 'Your data on this phone was kept as it was. Please try again.');
+      else Alert.alert('Restore incomplete', 'Something went wrong and some data on this phone may be missing. Your backup file is unchanged: choose Restore from backup again, then Replace, to recover from it.');
     };
     Alert.alert('Restore this backup?', preview, [
       { text: 'Cancel', style: 'cancel' },
