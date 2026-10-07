@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DATA_KEYS } from './storage';
+import { DATA_KEYS, RECOVERY_KEY } from './storage';
 import { normalizeActivities } from './activity';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -91,7 +91,8 @@ const RULES: Record<string, Rule> = {
     && ['text', 'situation', 'thought', 'perspective', 'nextStep'].every((k) => optStr(r[k]))
     && (r.feelings === undefined || strArr(r.feelings))
     && ['text', 'situation', 'thought', 'perspective', 'nextStep'].some((k) => nonEmpty(r[k]))),
-  mental_state_plans: list((r) => isPlainObject(r) && dateStr(r.date) && int(r.capacity, 1, 5) && isoOpt(r.updatedAt)
+  // updatedAt: ISO from v1.2 on; older plans saved a time only ("12:35"), which is still valid.
+  mental_state_plans: list((r) => isPlainObject(r) && dateStr(r.date) && int(r.capacity, 1, 5) && (r.updatedAt === undefined || nonEmpty(r.updatedAt, 40))
     && Array.isArray(r.tasks) && (r.tasks as any[]).every((t) => isPlainObject(t) && nonEmpty(t.id, 100) && nonEmpty(t.title, 300) && int(t.effort, 1, 3) && typeof t.done === 'boolean'), 60),
   trusted_contacts: list((r) => nonEmpty(r, 200) || (isPlainObject(r) && nonEmpty(r.name, 200) && optStr(r.phone, 40)), 50),
   meditation_favourites: list((r) => MEDITATIONS.includes(r), 10),
@@ -153,22 +154,59 @@ export function parseBackup(text: string): ParsedBackup {
   return { exportedAt, data, summary, skipped };
 }
 
-/** Writes the given values and removes the given keys; if anything fails, puts back exactly what was there. */
+// ---------- Crash-safe writes ----------
+// A recovery copy of the current data is saved BEFORE anything changes, and only deleted once the
+// restore has fully succeeded or been fully undone. Nothing is ever bulk-deleted: undoing puts the
+// original values back and removes only keys this restore created. If undoing also fails, the copy
+// stays and recoverInterruptedRestore() finishes the job the next time the app opens.
+type Recovery = { v: 1; startedAt: string; snapshot: [string, string | null][] };
+
+/** Puts the data back exactly as it was in the recovery copy. Throws if storage fails. */
+async function undo(snapshot: [string, string | null][]): Promise<void> {
+  const original = snapshot.filter(([, v]) => v != null) as [string, string][];
+  const created = snapshot.filter(([, v]) => v == null).map(([k]) => k);
+  if (original.length) await AsyncStorage.multiSet(original); // original values first...
+  if (created.length) await AsyncStorage.multiRemove(created); // ...then drop only what didn't exist before
+}
+
 async function writeSafely(sets: [string, string][], removes: string[]): Promise<RestoreResult> {
   const snapshot = await AsyncStorage.multiGet(BACKUP_KEYS);
+  const recovery: Recovery = { v: 1, startedAt: new Date().toISOString(), snapshot: snapshot.map(([k, v]) => [k, v]) };
   try {
-    if (sets.length) await AsyncStorage.multiSet(sets); // write the new data first...
-    if (removes.length) await AsyncStorage.multiRemove(removes); // ...and only then remove what the backup doesn't have
-    return { ok: true };
+    await AsyncStorage.setItem(RECOVERY_KEY, JSON.stringify(recovery));
+  } catch {
+    return { ok: false, rolledBack: true }; // couldn't save a recovery copy, so nothing was changed
+  }
+  try {
+    if (sets.length) await AsyncStorage.multiSet(sets);
+    if (removes.length) await AsyncStorage.multiRemove(removes);
   } catch {
     try {
-      await AsyncStorage.multiRemove(BACKUP_KEYS);
-      const keep = snapshot.filter(([, v]) => v != null) as [string, string][];
-      if (keep.length) await AsyncStorage.multiSet(keep);
+      await undo(recovery.snapshot);
+      await AsyncStorage.removeItem(RECOVERY_KEY).catch(() => undefined);
       return { ok: false, rolledBack: true };
     } catch {
-      return { ok: false, rolledBack: false };
+      return { ok: false, rolledBack: false }; // the recovery copy is kept; the next app launch finishes the undo
     }
+  }
+  // Success. If deleting the copy fails, the next launch would undo this restore: the person keeps their
+  // original data (and their backup file), which is the safe direction.
+  await AsyncStorage.removeItem(RECOVERY_KEY).catch(() => undefined);
+  return { ok: true };
+}
+
+/** Call at app start: finishes undoing a restore that was interrupted. Safe to call any time. */
+export async function recoverInterruptedRestore(): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(RECOVERY_KEY);
+    if (!raw) return false;
+    const recovery = JSON.parse(raw) as Recovery;
+    if (recovery?.v !== 1 || !Array.isArray(recovery.snapshot)) { await AsyncStorage.removeItem(RECOVERY_KEY); return false; }
+    await undo(recovery.snapshot.filter(([k]) => BACKUP_KEYS.includes(k)));
+    await AsyncStorage.removeItem(RECOVERY_KEY);
+    return true;
+  } catch {
+    return false; // still stored; try again next launch
   }
 }
 

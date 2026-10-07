@@ -8,6 +8,8 @@ type DailyPlan = { date: string; capacity: number; tasks: PlannedTask[]; updated
 
 const CAPACITY_LABELS = ['Very limited', 'Low', 'Steady', 'Good', 'Plenty'];
 const todayKey = () => new Date().toLocaleDateString();
+// Plans used to save only a time ("12:35"); new plans save a full timestamp. Show either as a time.
+const savedTime = (v: string) => (Number.isNaN(Date.parse(v)) ? v : new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
 
 export default function PlannerScreen() {
   const [capacity, setCapacity] = useState(3);
@@ -24,7 +26,7 @@ export default function PlannerScreen() {
       if (today) {
         setCapacity(today.capacity);
         setTasks(today.tasks);
-        setSavedAt(today.updatedAt);
+        setSavedAt(savedTime(today.updatedAt));
       }
     };
     loadPlan();
@@ -48,10 +50,10 @@ export default function PlannerScreen() {
   const savePlan = async () => {
     const stored = await AsyncStorage.getItem('mental_state_plans');
     const plans: DailyPlan[] = stored ? JSON.parse(stored) : [];
-    const updatedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const updatedAt = new Date().toISOString();
     const today: DailyPlan = { date: todayKey(), capacity, tasks, updatedAt };
     await AsyncStorage.setItem('mental_state_plans', JSON.stringify([today, ...plans.filter((plan) => plan.date !== today.date)].slice(0, 60)));
-    setSavedAt(updatedAt);
+    setSavedAt(savedTime(updatedAt));
     Alert.alert('Plan saved', 'Your plan is saved locally and can be updated any time.');
   };
 

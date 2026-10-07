@@ -9,6 +9,7 @@ import AppLock from './src/components/AppLock';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import Onboarding from './src/components/Onboarding';
 import { ONBOARDING_KEY } from './src/lib/storage';
+import { recoverInterruptedRestore } from './src/lib/backup';
 import { SessionProvider, useSession } from './src/lib/session';
 import { accountsAvailable } from './src/lib/account';
 import AccountScreen from './src/screens/AccountScreen';
@@ -35,7 +36,8 @@ function Root() {
   const [accountPrompted, setAccountPrompted] = useState<boolean | null>(null);
 
   useEffect(() => {
-    AsyncStorage.multiGet([ONBOARDING_KEY, ACCOUNT_PROMPT_KEY])
+    // Finish undoing an interrupted backup restore before any screen reads its data.
+    recoverInterruptedRestore().catch(() => false).then(() => AsyncStorage.multiGet([ONBOARDING_KEY, ACCOUNT_PROMPT_KEY]))
       .then(([[, done], [, prompted]]) => { setOnboarded(done === 'true'); setAccountPrompted(prompted === 'true'); })
       .catch(() => { setOnboarded(false); setAccountPrompted(false); });
   }, []);

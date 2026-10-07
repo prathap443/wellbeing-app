@@ -171,21 +171,27 @@ export function suggest(records: ActivityRecord[], feeling: Feeling, minutes: nu
   const fitting = rank(all.filter(fits));
   const lengthFor = (t: Suggestable) => (fits(t) ? minutes : TOOL_INFO[t].minutes.find((m) => m > minutes) ?? TOOL_INFO[t].minutes[0]);
 
+  const primaryTool = fitting[0] ?? rank(all)[0];
+  // Alternative: the next fitting tool that hasn't been rated unhelpful; otherwise the best option at a longer length.
+  const altTool = fitting.find((t) => t !== primaryTool && !unhelpful(t))
+    ?? rank(all.filter((t) => !fits(t) && !unhelpful(t)))[0]
+    ?? null;
+  const lengthPhrase = `${minutes} minute${minutes === 1 ? '' : 's'}`;
+
   const make = (tool: Suggestable): Suggestion => {
     const ev = evidence.get(tool)!;
     const info = TOOL_INFO[tool];
     const len = lengthFor(tool);
     let reason: string;
     if (helpful(tool)) reason = `Early observation: you felt better after this in ${ev.helped} of your last ${ev.rated} sessions when ${FEELING_PHRASE[feeling]}.`;
-    else if (unhelpful(tool)) reason = `You've said this didn't help in ${ev.rated - ev.helped} of your last ${ev.rated} sessions when ${FEELING_PHRASE[feeling]}. It's the only option that fits ${minutes} minute${minutes === 1 ? '' : 's'}; a longer option below may suit you better.`;
+    else if (unhelpful(tool)) {
+      // Only reached when nothing that fits the chosen time is left that hasn't been rated unhelpful.
+      reason = `None of the ${lengthPhrase} options has helped you recently when ${FEELING_PHRASE[feeling]} (this one: not better in ${ev.rated - ev.helped} of your last ${ev.rated}).`
+        + (altTool ? ' With a bit more time, the option below may suit you better.' : ' You could still try it, or pick a different feeling or length.');
+    }
     else reason = `A good place to start when you're ${FEELING_PHRASE[feeling]}.`;
     return { tool, title: info.title, route: info.route, icon: info.icon, reason, personal: helpful(tool), minutes: len, ratedUnhelpful: unhelpful(tool) };
   };
 
-  const primaryTool = fitting[0] ?? rank(all)[0];
-  // Alternative: the next fitting tool that hasn't been rated unhelpful; otherwise the best option at a longer length.
-  const altTool = fitting.find((t) => t !== primaryTool && !unhelpful(t))
-    ?? rank(all.filter((t) => !fits(t) && !unhelpful(t)))[0]
-    ?? null;
   return { primary: make(primaryTool), alternative: altTool ? make(altTool) : null };
 }

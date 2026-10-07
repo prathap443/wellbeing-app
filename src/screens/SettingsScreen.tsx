@@ -96,7 +96,7 @@ export default function SettingsScreen() {
       try { result = await applyBackup(backup, mode); } catch { result = { ok: false, rolledBack: false }; }
       if (result.ok) Alert.alert('Restored', 'Your backup has been restored. Fully close and reopen the app to refresh every screen.');
       else if (result.rolledBack) Alert.alert('Restore failed', 'Your data on this phone was kept as it was. Please try again.');
-      else Alert.alert('Restore incomplete', 'Something went wrong and some data on this phone may be missing. Your backup file is unchanged: choose Restore from backup again, then Replace, to recover from it.');
+      else Alert.alert('Restore failed', 'A copy of your previous data was saved before the restore started. Fully close and reopen the app, and it will be put back automatically.');
     };
     Alert.alert('Restore this backup?', preview, [
       { text: 'Cancel', style: 'cancel' },
