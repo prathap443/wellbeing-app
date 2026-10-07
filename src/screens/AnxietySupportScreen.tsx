@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 type AnxietySupportParams = {
   Breathe: undefined;
   Grounding: undefined;
-  Journal: undefined;
+  Journal: { prefill?: string } | undefined;
   SupportGuidance: undefined;
 };
 
@@ -25,7 +25,7 @@ export default function AnxietySupportScreen() {
     <View style={styles.toolGrid}><TouchableOpacity style={styles.tool} onPress={() => navigation.navigate('Breathe')}><Icon name="leaf-outline" size={25} color="#5eead4" /><Text style={styles.toolTitle}>2-minute reset</Text><Text style={styles.toolText}>Follow a steady breathing rhythm.</Text><Text style={styles.toolLink}>Start breathing</Text></TouchableOpacity><TouchableOpacity style={styles.tool} onPress={() => navigation.navigate('Grounding')}><Icon name="water-outline" size={25} color="#93c5fd" /><Text style={styles.toolTitle}>Come back to now</Text><Text style={styles.toolText}>Use your senses to ground yourself.</Text><Text style={styles.toolLink}>Start grounding</Text></TouchableOpacity></View>
     <Text style={styles.sectionTitle}>Name the worry</Text><Text style={styles.sectionHint}>You do not have to solve it all here. Put a few words around what feels difficult.</Text>
     <TextInput style={styles.worryInput} value={worry} onChangeText={setWorry} placeholder="What feels most worrying right now?" placeholderTextColor="#64748b" multiline textAlignVertical="top" />
-    <TouchableOpacity style={styles.journalButton} onPress={() => navigation.navigate('Journal')}><Icon name="book-outline" size={19} color="#c4b5fd" /><Text style={styles.journalText}>{worry.trim() ? 'Explore this in your journal' : 'Use a guided journal prompt'}</Text><Icon name="arrow-forward-outline" size={18} color="#c4b5fd" /></TouchableOpacity>
+    <TouchableOpacity style={styles.journalButton} onPress={() => navigation.navigate('Journal', worry.trim() ? { prefill: worry.trim() } : undefined)}><Icon name="book-outline" size={19} color="#c4b5fd" /><Text style={styles.journalText}>{worry.trim() ? 'Explore this in your journal' : 'Use a guided journal prompt'}</Text><Icon name="arrow-forward-outline" size={18} color="#c4b5fd" /></TouchableOpacity>
     <Text style={styles.sectionTitle}>One small next step</Text><Text style={styles.sectionHint}>Choose something you can realistically do in the next few minutes.</Text>
     <View style={styles.stepList}>{NEXT_STEPS.map((step) => <TouchableOpacity key={step} style={[styles.step, nextStep === step && styles.stepSelected]} onPress={() => setNextStep(step)}><Icon name={nextStep === step ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={nextStep === step ? '#6ee7b7' : '#64748b'} /><Text style={[styles.stepText, nextStep === step && styles.stepTextSelected]}>{step}</Text></TouchableOpacity>)}</View>
     {nextStep ? <View style={styles.commitment}><Icon name="checkmark-circle-outline" size={20} color="#a7f3d0" /><Text style={styles.commitmentText}>For now, your next step is: {nextStep}.</Text></View> : null}

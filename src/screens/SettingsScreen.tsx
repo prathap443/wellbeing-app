@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Alert,
   Switch,
-  Share,
   Linking,
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
@@ -14,7 +13,8 @@ import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { AppSettings, DEFAULT_SETTINGS, clearAllData, exportAllData, loadSettings, saveSettings } from '../lib/storage';
+import { AppSettings, DEFAULT_SETTINGS, clearAllData, loadSettings, saveSettings } from '../lib/storage';
+import { BackupError, applyBackup, exportBackup, parseBackup, pickBackupFile, type ParsedBackup } from '../lib/backup';
 import { disableDailyReminder, enableDailyReminder, formatHour } from '../lib/reminders';
 import { useSession } from '../lib/session';
 import { accountsAvailable } from '../lib/account';
@@ -72,11 +72,40 @@ export default function SettingsScreen() {
 
   const exportData = async () => {
     try {
-      const json = await exportAllData();
-      await Share.share({ title: 'Wellbeing data export', message: json });
+      await exportBackup();
     } catch (e) {
-      Alert.alert('Error', 'Failed to export data');
+      Alert.alert('Backup failed', e instanceof BackupError ? e.message : 'The backup file could not be created. Please try again.');
     }
+  };
+
+  const restoreData = async () => {
+    let backup: ParsedBackup;
+    try {
+      const text = await pickBackupFile();
+      if (text == null) return; // cancelled
+      backup = parseBackup(text);
+    } catch (e) {
+      Alert.alert('Cannot restore', e instanceof BackupError ? e.message : 'That file could not be read.');
+      return;
+    }
+    const when = backup.exportedAt ? `Backup from ${new Date(backup.exportedAt).toLocaleString()}` : 'Wellbeing backup';
+    const preview = `${when}\n\n${backup.summary.map((s) => `${s.label}: ${s.count}`).join('\n') || 'Settings and plans only'}\n\nMerge keeps everything on this phone and adds what is missing. Replace swaps this phone's data for the backup.`;
+    const run = async (mode: 'merge' | 'replace') => {
+      try {
+        await applyBackup(backup, mode);
+        Alert.alert('Restored', 'Your backup has been restored. Fully close and reopen the app to refresh every screen.');
+      } catch {
+        Alert.alert('Restore failed', 'Nothing was changed. Please try again.');
+      }
+    };
+    Alert.alert('Restore this backup?', preview, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Replace', style: 'destructive', onPress: () => Alert.alert('Replace everything?', 'Mood entries, check-ins, journal and other data on this phone will be replaced by the backup. This cannot be undone.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Replace', style: 'destructive', onPress: () => run('replace') },
+      ]) },
+      { text: 'Merge', onPress: () => run('merge') },
+    ]);
   };
 
   const confirmClearAllData = () => {
@@ -230,10 +259,16 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data</Text>
         {actionButton(
-          'Export Data',
-          'Share a copy of everything you have saved',
+          'Back up data',
+          'Save a backup file you can restore later. It contains your private notes, so keep it somewhere safe.',
           'download-outline',
           exportData
+        )}
+        {actionButton(
+          'Restore from backup',
+          'Merge or replace data from a backup file',
+          'cloud-upload-outline',
+          restoreData
         )}
         {actionButton(
           'Clear All Data',

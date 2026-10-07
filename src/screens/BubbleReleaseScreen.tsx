@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, LayoutChangeEvent, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import FeedbackCard from '../components/FeedbackCard';
+import { useActivitySession } from '../lib/useActivitySession';
+import type { Feeling } from '../lib/activity';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 // Bubble Release: a calm, no-fail game. Bubbles drift up; tap to release them.
@@ -71,6 +74,8 @@ function Bubble({ spec, height, calm, onGone, onPop }: { spec: BubbleSpec; heigh
 
 export default function BubbleReleaseScreen() {
   const navigation = useNavigation<any>();
+  const params = (useRoute<any>().params ?? {}) as { feeling?: Feeling };
+  const session = useActivitySession('bubbles', params.feeling);
   const [area, setArea] = useState({ width: 0, height: 0 });
   const [bubbles, setBubbles] = useState<BubbleSpec[]>([]);
   const [released, setReleased] = useState(0);
@@ -84,6 +89,9 @@ export default function BubbleReleaseScreen() {
   const mounted = useRef(true);
 
   useEffect(() => () => { mounted.current = false; }, []);
+  // The session starts when the game opens and counts as finished at the 3-minute point.
+  useEffect(() => { session.begin(); }, [session.begin]);
+  useEffect(() => { if (finished) session.finish(); }, [finished, session.finish]);
   useEffect(() => { AccessibilityInfo.isReduceMotionEnabled().then((on) => mounted.current && setCalm(on)).catch(() => undefined); }, []);
 
   // Breathing circle: in for 4 seconds, out for 6.
@@ -179,6 +187,7 @@ export default function BubbleReleaseScreen() {
         <Icon name="sparkles-outline" size={28} color="#6ee7b7" />
         <Text style={styles.cardTitle}>Nice reset</Text>
         <Text style={styles.cardText}>{released > 0 ? `You let go of ${released} bubble${released === 1 ? '' : 's'} in three minutes.` : 'You gave yourself three calm minutes.'} Take one slow breath before you move on.</Text>
+        {session.finishedId ? <FeedbackCard sessionId={session.finishedId} /> : null}
         <View style={styles.cardButtons}>
           <TouchableOpacity style={styles.secondary} onPress={keepGoing} accessibilityRole="button"><Text style={styles.secondaryText}>Keep going</Text></TouchableOpacity>
           <TouchableOpacity style={styles.primary} onPress={() => navigation.goBack()} accessibilityRole="button"><Text style={styles.primaryText}>Done</Text></TouchableOpacity>

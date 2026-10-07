@@ -5,10 +5,20 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 
 const HABITS = ['Set a wind-down time', 'Put screens away for 30 minutes', 'Prepare tomorrow in one small step', 'Choose a calming activity', 'Keep the room cool and comfortable'];
 
+/** "Tonight" runs from 4am to 4am local time, so finishing the routine after midnight still counts. */
+export const nightKey = (now = new Date()) => { const d = new Date(now.getTime() - 4 * 3600_000); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+/** Older versions saved a plain list with no date; treat that (or any other night's list) as not done tonight. */
+export function readTonight(stored: string | null, now = new Date()): string[] {
+  try {
+    const parsed = stored ? JSON.parse(stored) : null;
+    return parsed && !Array.isArray(parsed) && parsed.night === nightKey(now) && Array.isArray(parsed.done) ? parsed.done : [];
+  } catch { return []; }
+}
+
 export default function SleepResetScreen() {
   const [completed, setCompleted] = useState<string[]>([]);
-  useEffect(() => { AsyncStorage.getItem('sleep_reset_habits').then((stored) => { if (stored) setCompleted(JSON.parse(stored)); }); }, []);
-  const toggle = async (habit: string) => { const next = completed.includes(habit) ? completed.filter((item) => item !== habit) : [...completed, habit]; setCompleted(next); await AsyncStorage.setItem('sleep_reset_habits', JSON.stringify(next)); };
+  useEffect(() => { AsyncStorage.getItem('sleep_reset_habits').then((stored) => setCompleted(readTonight(stored))).catch(() => undefined); }, []);
+  const toggle = async (habit: string) => { const next = completed.includes(habit) ? completed.filter((item) => item !== habit) : [...completed, habit]; setCompleted(next); await AsyncStorage.setItem('sleep_reset_habits', JSON.stringify({ night: nightKey(), done: next })); };
   return <ScrollView contentContainerStyle={styles.container}>
     <Icon name="moon-outline" size={30} color="#c4b5fd" /><Text style={styles.title}>Sleep reset</Text><Text style={styles.subtitle}>A short routine can help your body recognise it is time to wind down.</Text>
     <View style={styles.scoreCard}><Text style={styles.score}>{completed.length}/{HABITS.length}</Text><Text style={styles.scoreText}>habits completed tonight</Text></View>

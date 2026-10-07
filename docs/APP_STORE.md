@@ -166,3 +166,21 @@ APPLE HEALTH (new in 1.1, optional, read-only): Settings > "Apple Health" or His
 ```
 
 App Privacy answers do not change: Apple Health data is processed only on the device, so it is not "collected" under Apple's definitions.
+
+## Version 1.2 – What helps me?
+
+**What's New in This Version**
+
+```
+• What helps me?: tell Wellbeing how you feel and how much time you have, and get one thing to try
+• "Did this help?" after breathing, grounding, meditation and Bubble release, so suggestions learn from your own answers
+• Breathing sessions now have a 1, 3 or 5 minute length and a Finish button
+• Back up your data to a file and restore it on any iPhone
+• Fixes: the sleep reset checklist starts fresh each night, and your worry carries into the journal from Anxiety support
+```
+
+**Add to the review notes**
+
+```
+WHAT HELPS ME (new in 1.2): Home > "What helps me?" suggests an in-app exercise based on the feeling and time the user selects. After an exercise, an optional "Did this help?" rating is stored on the device only; suggestions use these ratings once there are at least three for that exercise and feeling, and are worded as observations, not medical claims. BACKUP: Settings > "Back up data" saves a JSON file via the share sheet; "Restore from backup" reads a file chosen with the document picker. Backups never leave the user's control and are not uploaded to our server.
+```

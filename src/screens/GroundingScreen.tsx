@@ -1,6 +1,10 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React, { useState } from 'react';
+import { useRoute } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
+import FeedbackCard from '../components/FeedbackCard';
+import { useActivitySession } from '../lib/useActivitySession';
+import type { Feeling } from '../lib/activity';
 
 const STEPS = [
   { count: '5', title: 'See', text: 'Name five things you can see around you.' },
@@ -11,20 +15,35 @@ const STEPS = [
 ];
 
 export default function GroundingScreen() {
+  const params = (useRoute<any>().params ?? {}) as { feeling?: Feeling };
   const [step, setStep] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const session = useActivitySession('grounding', params.feeling);
   const current = STEPS[step];
-  const complete = step === STEPS.length - 1;
+  const last = step === STEPS.length - 1;
+  const next = () => {
+    if (step === 0) session.begin();
+    if (last) { setFinished(true); session.finish(); return; }
+    setStep(step + 1);
+  };
+  const again = () => { setFinished(false); setStep(0); };
 
-  return <View style={styles.container}>
+  return <ScrollView contentContainerStyle={styles.container}>
     <Icon name="water-outline" size={30} color="#60a5fa" />
     <Text style={styles.title}>5-4-3-2-1 grounding</Text>
     <Text style={styles.subtitle}>Bring attention back to the present, one sense at a time.</Text>
     <View style={styles.progress}>{STEPS.map((_, index) => <View key={index} style={[styles.progressDot, index <= step && styles.progressDotActive]} />)}</View>
-    <View style={styles.card}><Text style={styles.count}>{current.count}</Text><Text style={styles.cardTitle}>{current.title}</Text><Text style={styles.cardText}>{current.text}</Text></View>
-    <TouchableOpacity style={styles.button} onPress={() => complete ? setStep(0) : setStep(step + 1)}><Text style={styles.buttonText}>{complete ? 'Start again' : 'Next step'}</Text><Icon name={complete ? 'refresh-outline' : 'arrow-forward-outline'} size={20} color="#082f49" /></TouchableOpacity>
-  </View>;
+    {finished ? <>
+      <View style={styles.card}><Icon name="checkmark-circle-outline" size={40} color="#60a5fa" /><Text style={styles.cardTitle}>You're here, now</Text><Text style={styles.cardText}>You moved through all five senses.</Text></View>
+      {session.finishedId ? <FeedbackCard sessionId={session.finishedId} /> : null}
+      <TouchableOpacity style={styles.button} onPress={again}><Text style={styles.buttonText}>Start again</Text><Icon name="refresh-outline" size={20} color="#082f49" /></TouchableOpacity>
+    </> : <>
+      <View style={styles.card}><Text style={styles.count}>{current.count}</Text><Text style={styles.cardTitle}>{current.title}</Text><Text style={styles.cardText}>{current.text}</Text></View>
+      <TouchableOpacity style={styles.button} onPress={next}><Text style={styles.buttonText}>{last ? 'Finish' : 'Next step'}</Text><Icon name={last ? 'checkmark-done-outline' : 'arrow-forward-outline'} size={20} color="#082f49" /></TouchableOpacity>
+    </>}
+  </ScrollView>;
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center', padding: 28 }, title: { color: '#f8fafc', fontSize: 26, fontWeight: '700', marginTop: 14 }, subtitle: { color: '#94a3b8', textAlign: 'center', lineHeight: 21, marginTop: 8, maxWidth: 310 }, progress: { flexDirection: 'row', gap: 10, marginTop: 34 }, progressDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#334155' }, progressDotActive: { backgroundColor: '#60a5fa' }, card: { width: '100%', backgroundColor: '#172554', borderRadius: 20, padding: 28, alignItems: 'center', marginVertical: 28 }, count: { color: '#93c5fd', fontSize: 64, fontWeight: '700' }, cardTitle: { color: '#f8fafc', fontSize: 24, fontWeight: '700', marginTop: 6 }, cardText: { color: '#bfdbfe', textAlign: 'center', lineHeight: 23, fontSize: 16, marginTop: 14 }, button: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#7dd3fc', borderRadius: 28, paddingHorizontal: 24, paddingVertical: 15 }, buttonText: { color: '#082f49', fontWeight: '700', fontSize: 16 },
+  container: { flexGrow: 1, backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center', padding: 28 }, title: { color: '#f8fafc', fontSize: 26, fontWeight: '700', marginTop: 14 }, subtitle: { color: '#94a3b8', textAlign: 'center', lineHeight: 21, marginTop: 8, maxWidth: 310 }, progress: { flexDirection: 'row', gap: 10, marginTop: 34 }, progressDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#334155' }, progressDotActive: { backgroundColor: '#60a5fa' }, card: { width: '100%', backgroundColor: '#172554', borderRadius: 20, padding: 28, alignItems: 'center', marginVertical: 28 }, count: { color: '#93c5fd', fontSize: 64, fontWeight: '700' }, cardTitle: { color: '#f8fafc', fontSize: 24, fontWeight: '700', marginTop: 6 }, cardText: { color: '#bfdbfe', textAlign: 'center', lineHeight: 23, fontSize: 16, marginTop: 14 }, button: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#7dd3fc', borderRadius: 28, paddingHorizontal: 24, paddingVertical: 15 }, buttonText: { color: '#082f49', fontWeight: '700', fontSize: 16 },
 });

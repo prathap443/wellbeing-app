@@ -3,6 +3,10 @@ import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useAudioPlayer } from 'expo-audio';
+import { useRoute } from '@react-navigation/native';
+import FeedbackCard from '../components/FeedbackCard';
+import { useActivitySession } from '../lib/useActivitySession';
+import type { Feeling } from '../lib/activity';
 
 type Session = { id: string; title: string; minutes: number; category: string; color: string; icon: string; prompt: string };
 
@@ -13,9 +17,14 @@ const SESSIONS: Session[] = [
   { id: 'kindness', title: 'A kinder inner voice', minutes: 5, category: 'Self-compassion', color: '#f472b6', icon: 'heart-outline', prompt: 'Think of a difficult moment. Offer yourself the same words you would offer someone you care about.' },
 ];
 
+// Arriving from "What helps me?": "can't switch off" opens on Release the day; otherwise the shortest practice.
+const initialSession = (feeling?: Feeling) => (feeling === 'cant_switch_off' ? SESSIONS.find((s) => s.id === 'release') : undefined) ?? SESSIONS[0];
+
 export default function MeditationScreen() {
-  const [selected, setSelected] = useState<Session>(SESSIONS[0]);
-  const [remaining, setRemaining] = useState(SESSIONS[0].minutes * 60);
+  const params = (useRoute<any>().params ?? {}) as { feeling?: Feeling };
+  const session = useActivitySession('meditation', params.feeling);
+  const [selected, setSelected] = useState<Session>(() => initialSession(params.feeling));
+  const [remaining, setRemaining] = useState(() => initialSession(params.feeling).minutes * 60);
   const [playing, setPlaying] = useState(false);
   const [favourites, setFavourites] = useState<string[]>([]);
   const [completed, setCompleted] = useState(0);
@@ -46,6 +55,7 @@ export default function MeditationScreen() {
       if (current > 1) return current - 1;
       setPlaying(false);
       pauseAudio();
+      setTimeout(session.finish, 0); // timer reached the end: a finished session
       setCompleted((currentCompleted) => {
         const next = currentCompleted + 1;
         AsyncStorage.setItem('meditation_completed', String(next));
@@ -56,13 +66,14 @@ export default function MeditationScreen() {
     return () => clearInterval(interval);
   }, [playing, player, selected]);
 
-  const chooseSession = (session: Session) => { pauseAudio(); setPlaying(false); setSelected(session); setRemaining(session.minutes * 60); };
+  const chooseSession = (next: Session) => { pauseAudio(); setPlaying(false); session.abandon(); setSelected(next); setRemaining(next.minutes * 60); };
   const toggleFavourite = async () => { const next = favourites.includes(selected.id) ? favourites.filter((id) => id !== selected.id) : [...favourites, selected.id]; setFavourites(next); await AsyncStorage.setItem('meditation_favourites', JSON.stringify(next)); };
   const togglePractice = () => {
     if (playing) {
       pauseAudio();
       setPlaying(false);
     } else {
+      session.begin();
       playAudio();
       setPlaying(true);
     }
@@ -77,6 +88,7 @@ export default function MeditationScreen() {
       <Text style={styles.timer}>{time}</Text><TouchableOpacity style={[styles.playButton, { backgroundColor: selected.color }]} onPress={togglePractice}><Icon name={playing ? 'pause-outline' : 'play-outline'} size={21} color="#fff" /><Text style={styles.playText}>{playing ? 'Pause' : 'Begin practice'}</Text></TouchableOpacity>
     </View>
     <View style={styles.stats}><Icon name="checkmark-circle-outline" size={21} color="#5eead4" /><Text style={styles.statsText}>{completed} practices completed</Text></View>
+    {session.finishedId ? <FeedbackCard sessionId={session.finishedId} /> : null}
     <Text style={styles.sectionTitle}>Choose a practice</Text>
     {SESSIONS.map((session) => <TouchableOpacity key={session.id} style={[styles.session, selected.id === session.id && { borderColor: session.color }]} onPress={() => chooseSession(session)}><View style={[styles.listIcon, { backgroundColor: session.color + '22' }]}><Icon name={session.icon as any} size={21} color={session.color} /></View><View style={styles.sessionInfo}><Text style={styles.sessionTitle}>{session.title}</Text><Text style={styles.sessionMeta}>{session.category} - {session.minutes} min</Text></View><Icon name="chevron-forward-outline" size={19} color="#64748b" /></TouchableOpacity>)}
     <View style={styles.audioNote}><Icon name="musical-notes-outline" size={20} color="#93c5fd" /><View style={styles.audioNoteContent}><Text style={styles.audioNoteTitle}>Ambient sound</Text><Text style={styles.audioNoteText}>A soft, calming soundscape plays gently when you begin a practice.</Text></View></View>

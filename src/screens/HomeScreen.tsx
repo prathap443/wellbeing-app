@@ -19,6 +19,7 @@ import { isCoachConfigured } from '../lib/coach';
 import { useSession } from '../lib/session';
 import { formatSleep, formatSteps } from '../lib/health';
 import { useHealth } from '../lib/useHealth';
+import WhatHelpsCard from '../components/WhatHelpsCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -202,6 +203,8 @@ export default function HomeScreen() {
           <Icon name="chevron-forward-outline" size={20} color="#99f6e4" />
         </TouchableOpacity>
       ) : null}
+
+      <WhatHelpsCard />
 
       {health.connected && health.hasData && health.data ? (() => {
         const today = health.data[health.data.length - 1];

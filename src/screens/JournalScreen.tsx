@@ -1,6 +1,7 @@
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRoute } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 type JournalEntry = {
@@ -22,7 +23,10 @@ const PROMPTS = [
 const FEELINGS = ['Calm', 'Hopeful', 'Stressed', 'Low', 'Anxious', 'Frustrated'];
 
 export default function JournalScreen() {
+  const prefill = ((useRoute<any>().params ?? {}) as { prefill?: string }).prefill;
   const [situation, setSituation] = useState('');
+  // Arriving from Anxiety support: start with the worry the user already wrote.
+  useEffect(() => { if (prefill) setSituation((current) => current.trim() ? current : prefill); }, [prefill]);
   const [thought, setThought] = useState('');
   const [perspective, setPerspective] = useState('');
   const [nextStep, setNextStep] = useState('');

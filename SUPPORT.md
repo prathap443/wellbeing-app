@@ -24,8 +24,8 @@ In the app, go to **Settings → Account → Delete account**. This permanently 
 **How do I delete my moods and journal?**
 They are stored only on your device. Use **Settings → Clear All Data**, or delete the app.
 
-**Can I get a copy of my data?**
-Yes. Use **Settings → Export Data** to share a copy of everything stored on your device.
+**How do I back up or move my data to a new phone?**
+Use **Settings → Back up data** and save the file somewhere safe, such as iCloud Drive or Files. On the new phone, install Wellbeing and use **Settings → Restore from backup**. Choose **Merge** to keep what is already there, or **Replace** to use only the backup. Backups contain your private notes, so keep them safe.
 
 **What does the AI coach see?**
 Only your quiz answers, optional first name, recent mood ratings and check-in scores, and the questions you ask. Never your notes, journal or contacts. See the [Privacy Policy](https://wellbeing-app.replit.app/privacy) for details.

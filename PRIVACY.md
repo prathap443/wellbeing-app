@@ -1,6 +1,6 @@
 # Wellbeing: Mood & Calm – Privacy Policy
 
-**Last updated: 5 October 2026**
+**Last updated: 7 October 2026**
 
 This policy explains what the Wellbeing app ("Wellbeing", "we") collects, why, and the choices you have. Wellbeing is provided by Prathap Adicherla, who is the data controller. Contact: [wellbeingsupport247@gmail.com](mailto:wellbeingsupport247@gmail.com).
 
@@ -13,7 +13,11 @@ This policy explains what the Wellbeing app ("Wellbeing", "we") collects, why, a
 
 ## What stays on your device
 
-Mood entries, daily check-ins, journal reflections, mental state plans, habits and goals, meditation progress, therapy companion notes, trusted contacts and settings are saved in the app's private storage on your device. We have no access to them. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.
+Mood entries, daily check-ins, journal reflections, mental state plans, habits and goals, meditation progress, your activity history and "Did this help?" answers, therapy companion notes, trusted contacts and settings are saved in the app's private storage on your device. We have no access to them. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.
+
+## Backups
+
+**Settings → Back up data** creates a file on your device and lets you choose where to save or send it. We never receive backup files. A backup contains your private notes, so keep it somewhere safe. **Restore from backup** reads a backup file you choose and either merges it with, or replaces, the data on this phone.
 
 ## Apple Health (optional, iPhone)
 
