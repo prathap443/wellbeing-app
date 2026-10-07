@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { CRISIS_REGIONS, FIND_A_HELPLINE_URL, defaultRegionIndex, openCrisisLink } from '../lib/crisis';
@@ -8,14 +8,22 @@ export default function SupportGuidanceScreen() {
   const navigation = useNavigation<any>();
   const [regionIndex, setRegionIndex] = useState(defaultRegionIndex);
   const region = CRISIS_REGIONS[regionIndex];
+  // Bring the selected country's button into view (e.g. Poland or India would otherwise be off-screen).
+  const chipsRef = useRef<ScrollView>(null);
+  const scrolled = useRef(false);
+  const onChipLayout = (index: number) => (e: { nativeEvent: { layout: { x: number } } }) => {
+    if (index !== regionIndex || scrolled.current) return;
+    scrolled.current = true;
+    chipsRef.current?.scrollTo({ x: Math.max(0, e.nativeEvent.layout.x - 20), animated: false });
+  };
 
   return <ScrollView contentContainerStyle={styles.container}>
     <Icon name="heart-outline" size={32} color="#fda4af" /><Text style={styles.title}>Get help now</Text><Text style={styles.subtitle}>You deserve support. Choose the next safest step for you.</Text>
     <View style={styles.urgent}><Text style={styles.urgentTitle}>If you are in immediate danger</Text><Text style={styles.urgentText}>Call your local emergency number now, or go to the nearest emergency department. If possible, stay with someone you trust.</Text></View>
 
     <Text style={styles.sectionTitle}>Crisis lines</Text>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.regions}>
-      {CRISIS_REGIONS.map((item, index) => <TouchableOpacity key={item.region} onPress={() => setRegionIndex(index)} style={[styles.regionChip, index === regionIndex && styles.regionChipActive]} accessibilityRole="button" accessibilityState={{ selected: index === regionIndex }}><Text style={[styles.regionText, index === regionIndex && styles.regionTextActive]}>{item.region}</Text></TouchableOpacity>)}
+    <ScrollView ref={chipsRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.regions}>
+      {CRISIS_REGIONS.map((item, index) => <TouchableOpacity key={item.region} onLayout={onChipLayout(index)} onPress={() => setRegionIndex(index)} style={[styles.regionChip, index === regionIndex && styles.regionChipActive]} accessibilityRole="button" accessibilityState={{ selected: index === regionIndex }}><Text style={[styles.regionText, index === regionIndex && styles.regionTextActive]}>{item.region}</Text></TouchableOpacity>)}
     </ScrollView>
     {region.lines.map((line) => <TouchableOpacity key={line.name} style={styles.card} onPress={() => openCrisisLink(line.url)} accessibilityRole="button" accessibilityLabel={`${line.name}, ${line.display}`}>
       <Icon name={line.url.startsWith('sms:') ? 'chatbubble-outline' : 'call-outline'} size={24} color="#fda4af" />

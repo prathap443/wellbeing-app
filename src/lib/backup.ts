@@ -113,8 +113,14 @@ const RULES: Record<string, Rule> = {
   weekly_habit_goal: whole((v) => int(v, 1, 7)),
   meditation_completed: whole((v) => int(v, 0, 1_000_000)),
   sleep_reset_habits: whole((v) => isPlainObject(v) && nonEmpty(v.night, 20) && strArr(v.done)),
-  therapy_companion_plan: whole((v) => isPlainObject(v) && optStr(v.topic) && optStr(v.questions)
-    && (v.actions === undefined || (Array.isArray(v.actions) && (v.actions as any[]).every((a) => isPlainObject(a) && nonEmpty(a.id, 100) && nonEmpty(a.text, 300) && typeof a.done === 'boolean')))),
+  // Generous limits (the screen allows 10,000 / 500), so older, longer notes still restore.
+  // A bad action is skipped on its own; it never takes the rest of the plan with it.
+  therapy_companion_plan: (v) => {
+    if (!isPlainObject(v) || !optStr(v.topic, 50_000) || !optStr(v.questions, 50_000) || !optStr(v.draft, 2_000)) return { skipped: 1 };
+    const actions = Array.isArray(v.actions) ? v.actions : [];
+    const kept = actions.filter((a) => isPlainObject(a) && nonEmpty(a.id, 100) && nonEmpty(a.text, 2_000) && typeof a.done === 'boolean');
+    return { value: { ...v, actions: kept }, skipped: actions.length - kept.length + (v.actions !== undefined && !Array.isArray(v.actions) ? 1 : 0) };
+  },
   coach_profile: whole((v) => isPlainObject(v) && Object.values(v).every((x) => str(x, 200) || strArr(x))),
   coach_consent: whole((v) => v === true || v === 'true'),
 };
