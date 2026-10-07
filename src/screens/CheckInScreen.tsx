@@ -45,7 +45,7 @@ export default function CheckInScreen() {
     const stored = await AsyncStorage.getItem('daily_check_ins');
     const entries: CheckIn[] = stored ? JSON.parse(stored) : [];
     const entry: CheckIn = { sleep, energy, stress, date: todayKey(), createdAt: new Date().toISOString() };
-    const updated = [entry, ...entries.filter((existing) => existing.date !== entry.date)].slice(0, 90);
+    const updated = [entry, ...entries.filter((existing) => existing.date !== entry.date)]; // keep all days, not just the last 90
     await AsyncStorage.setItem('daily_check_ins', JSON.stringify(updated));
     setSavedCheckIn(entry);
   };

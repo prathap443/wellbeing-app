@@ -1,4 +1,4 @@
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -24,32 +24,35 @@ export default function TherapyCompanionScreen() {
   const writeSeq = useRef(0);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
+  // Saving only starts once the saved notes have been read successfully. If the read fails, nothing is
+  // saved (an empty form would otherwise overwrite the notes) and the page offers Retry.
+  const [loadError, setLoadError] = useState(false);
+  const load = useCallback(async () => {
+    setLoadError(false);
+    let stored: string | null;
+    try {
+      stored = await AsyncStorage.getItem(KEY);
+    } catch {
+      setLoadError(true);
+      return;
+    }
+    if (stored) {
       try {
-        const stored = await AsyncStorage.getItem(KEY);
-        if (stored) {
-          try {
-            const plan: Partial<TherapyPlan> = JSON.parse(stored);
-            const t = typeof plan.topic === 'string' ? plan.topic : '';
-            const q = typeof plan.questions === 'string' ? plan.questions : '';
-            setTopic(t); setQuestions(q);
-            setActions(Array.isArray(plan.actions) ? plan.actions.filter((a) => a && typeof a.id === 'string' && typeof a.text === 'string') : []);
-            setActionText(typeof plan.draft === 'string' ? plan.draft : '');
-            setLimits({ topic: Math.max(NOTE_MAX, t.length), questions: Math.max(NOTE_MAX, q.length) });
-          } catch {
-            // Unreadable notes: keep a copy before anything is saved over them, rather than overwrite silently.
-            await AsyncStorage.setItem(`${KEY}_unreadable`, stored).catch(() => undefined);
-          }
-        }
+        const plan: Partial<TherapyPlan> = JSON.parse(stored);
+        const t = typeof plan.topic === 'string' ? plan.topic : '';
+        const q = typeof plan.questions === 'string' ? plan.questions : '';
+        setTopic(t); setQuestions(q);
+        setActions(Array.isArray(plan.actions) ? plan.actions.filter((a) => a && typeof a.id === 'string' && typeof a.text === 'string') : []);
+        setActionText(typeof plan.draft === 'string' ? plan.draft : '');
+        setLimits({ topic: Math.max(NOTE_MAX, t.length), questions: Math.max(NOTE_MAX, q.length) });
       } catch {
-        // Storage unavailable: start empty; saving will report its own result.
-      } finally {
-        setLoaded(true);
+        // Unreadable notes: keep a copy before anything is saved over them. If even that fails, don't continue.
+        try { await AsyncStorage.setItem(`${KEY}_unreadable`, stored); } catch { setLoadError(true); return; }
       }
-    };
-    load();
+    }
+    setLoaded(true);
   }, []);
+  useEffect(() => { load(); }, [load]);
 
   // Autosave every change (including the unsent action draft), and show the real result.
   // Waits for the initial load so an empty first render never overwrites the saved plan.
@@ -100,6 +103,17 @@ export default function TherapyCompanionScreen() {
   const hasSomethingToClear = topic.trim().length > 0 || questions.trim().length > 0 || actions.some((action) => action.done);
   const startNextSession = () => { setTopic(''); setQuestions(''); setActions(actions.filter((action) => !action.done)); setConfirmReset(false); };
 
+  if (!loaded) {
+    return <View style={[styles.container, styles.center]}>
+      {loadError ? <>
+        <Icon name="alert-circle-outline" size={30} color="#fca5a5" />
+        <Text style={styles.loadErrorTitle}>Couldn't open your notes</Text>
+        <Text style={styles.loadErrorText}>Nothing has been changed. Try again in a moment.</Text>
+        <TouchableOpacity style={styles.resetButton} onPress={load} accessibilityRole="button"><Icon name="refresh-outline" size={18} color="#93c5fd" /><Text style={styles.resetButtonText}>Retry</Text></TouchableOpacity>
+      </> : <ActivityIndicator color="#93c5fd" />}
+    </View>;
+  }
+
   return <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
     <View style={styles.header}><Icon name="people-outline" size={31} color="#60a5fa" /><Text style={styles.title}>Therapy companion</Text><Text style={styles.subtitle}>Prepare for sessions and keep small, agreed actions visible between them.</Text></View>
     <View style={styles.boundary}><Icon name="shield-checkmark-outline" size={20} color="#93c5fd" /><Text style={styles.boundaryText}>This is a private planning tool. It does not provide therapy, diagnosis, crisis support, or share anything with a therapist.</Text></View>
@@ -143,7 +157,8 @@ const styles = StyleSheet.create({
   resetButtons: { flexDirection: 'row', gap: 10, marginTop: 14 }, resetCancel: { flex: 1, borderWidth: 1, borderColor: '#334155', borderRadius: 20, paddingVertical: 12, alignItems: 'center' }, resetCancelText: { color: '#e2e8f0', fontWeight: '700' },
   resetConfirm: { flex: 1, backgroundColor: '#2563eb', borderRadius: 20, paddingVertical: 12, alignItems: 'center' }, resetConfirmText: { color: '#fff', fontWeight: '800' },
   savedRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 22 }, savedText: { color: '#94a3b8', fontSize: 13 },
-  errorText: { color: '#fca5a5', fontSize: 13 }, retryText: { color: '#93c5fd', fontWeight: '800', fontSize: 13, marginLeft: 4 },
+  errorText: { color: '#fca5a5', fontSize: 13 },
+  center: { alignItems: 'center', justifyContent: 'center', gap: 10 }, loadErrorTitle: { color: '#f8fafc', fontSize: 18, fontWeight: '800' }, loadErrorText: { color: '#94a3b8', textAlign: 'center' }, retryText: { color: '#93c5fd', fontWeight: '800', fontSize: 13, marginLeft: 4 },
   undoBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#334155', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, marginTop: 12 },
   undoText: { color: '#e2e8f0', flex: 1, fontSize: 13 }, undoButton: { color: '#93c5fd', fontWeight: '800' }, tip: { flexDirection: 'row', gap: 10, backgroundColor: '#78350f', borderRadius: 14, padding: 15, marginTop: 16 }, tipText: { color: '#fef3c7', flex: 1, fontSize: 12, lineHeight: 18 },
 });

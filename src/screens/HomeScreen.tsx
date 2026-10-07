@@ -107,7 +107,7 @@ export default function HomeScreen() {
       return;
     }
     const entry = { mood, note: note || '', date: new Date().toLocaleDateString(), timestamp: new Date().toISOString() };
-    const updated = [entry, ...savedEntries].slice(0, 1000);
+    const updated = [entry, ...savedEntries]; // keep every mood entry: no silent removal of older ones
     await AsyncStorage.setItem('mood_entries', JSON.stringify(updated));
     setSavedEntries(updated);
     setMood(null);

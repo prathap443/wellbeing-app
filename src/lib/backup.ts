@@ -85,12 +85,13 @@ const list = (ok: (r: any) => boolean, max = 5000): Rule => (v) => {
 const whole = (ok: (v: any) => boolean): Rule => (v) => (ok(v) ? { value: v, skipped: 0 } : { skipped: 1 });
 
 const RULES: Record<string, Rule> = {
-  mood_entries: list((r) => isPlainObject(r) && MOODS.includes(r.mood as string) && dateStr(r.date) && optStr(r.note, 2000) && isoOpt(r.timestamp)),
-  daily_check_ins: list((r) => isPlainObject(r) && int(r.sleep, 1, 5) && int(r.energy, 1, 5) && int(r.stress, 1, 5) && dateStr(r.date) && isoOpt(r.createdAt)),
-  journal_entries: list((r) => isPlainObject(r) && dateStr(r.date)
-    && ['text', 'situation', 'thought', 'perspective', 'nextStep'].every((k) => optStr(r[k]))
+  mood_entries: list((r) => isPlainObject(r) && MOODS.includes(r.mood as string) && dateStr(r.date) && optStr(r.note, 2000) && isoOpt(r.timestamp), 100_000),
+  daily_check_ins: list((r) => isPlainObject(r) && int(r.sleep, 1, 5) && int(r.energy, 1, 5) && int(r.stress, 1, 5) && dateStr(r.date) && isoOpt(r.createdAt), 100_000),
+  // The screen allows 5,000 characters per field; older entries may be longer, so accept up to 50,000.
+  journal_entries: list((r) => isPlainObject(r) && dateStr(r.date) && optStr(r.id, 100) && isoOpt(r.createdAt)
+    && ['text', 'situation', 'thought', 'perspective', 'nextStep'].every((k) => optStr(r[k], 50_000))
     && (r.feelings === undefined || strArr(r.feelings))
-    && ['text', 'situation', 'thought', 'perspective', 'nextStep'].some((k) => nonEmpty(r[k]))),
+    && ['text', 'situation', 'thought', 'perspective', 'nextStep'].some((k) => nonEmpty(r[k], 50_000)), 100_000),
   // updatedAt: ISO from v1.2 on; older plans saved a time only ("12:35"), which is still valid.
   mental_state_plans: list((r) => isPlainObject(r) && dateStr(r.date) && int(r.capacity, 1, 5) && (r.updatedAt === undefined || nonEmpty(r.updatedAt, 40))
     && Array.isArray(r.tasks) && (r.tasks as any[]).every((t) => isPlainObject(t) && nonEmpty(t.id, 100) && nonEmpty(t.title, 300) && int(t.effort, 1, 3) && typeof t.done === 'boolean'), 60),

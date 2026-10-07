@@ -24,6 +24,8 @@ export const DATA_KEYS = [
 export const SETTINGS_KEY = 'app_settings';
 /** Recovery copy kept while a backup restore is in progress (see backup.ts). */
 export const RECOVERY_KEY = 'backup_restore_recovery';
+/** Private data kept outside backups that Clear All Data must still delete. */
+export const PRIVATE_EXTRA_KEYS = ['therapy_companion_plan_unreadable', 'journal_draft'];
 export const ONBOARDING_KEY = 'onboarding_complete';
 
 export type AppSettings = {
@@ -69,5 +71,5 @@ export async function exportAllData(): Promise<string> {
 
 export async function clearAllData(): Promise<void> {
   // Also drops any leftover restore recovery copy, so it can't bring back data the person chose to delete.
-  await AsyncStorage.multiRemove([...DATA_KEYS, SETTINGS_KEY, RECOVERY_KEY]);
+  await AsyncStorage.multiRemove([...DATA_KEYS, SETTINGS_KEY, RECOVERY_KEY, ...PRIVATE_EXTRA_KEYS]);
 }

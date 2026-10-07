@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { parseEntryDate } from '../lib/dates';
 import { formatSleep, formatSteps, healthDayKey } from '../lib/health';
+import { entryId, type JournalEntry as SavedJournalEntry } from '../lib/journal';
 import { useHealth } from '../lib/useHealth';
 
 // Everything here is read from data already saved on the device. Nothing new is collected.
@@ -40,7 +41,7 @@ function dayLabel(d: Date): string {
 type TimelineItem =
   | { kind: 'mood'; at: Date; mood: string; note?: string }
   | { kind: 'checkin'; at: Date; sleep: number; energy: number; stress: number }
-  | { kind: 'journal'; at: Date; title: string; nextStep?: string }
+  | { kind: 'journal'; at: Date; title: string; nextStep?: string; id: string }
   | { kind: 'habits'; at: Date; count: number };
 type Filter = 'all' | 'mood' | 'checkin' | 'journal';
 const FILTERS: { id: Filter; label: string }[] = [
@@ -134,7 +135,7 @@ export default function HistoryScreen() {
     for (const j of journal) {
       const at = parseEntryDate(j);
       const title = (j.situation || j.text || '').trim();
-      if (valid(at)) items.push({ kind: 'journal', at, title: title || 'Reflection', nextStep: j.nextStep?.trim() || undefined });
+      if (valid(at)) items.push({ kind: 'journal', at, title: title || 'Reflection', nextStep: j.nextStep?.trim() || undefined, id: entryId(j as SavedJournalEntry) });
     }
     for (const [k, ids] of Object.entries(habits)) { const at = parseEntryDate({ date: k }); if (valid(at) && ids?.length) items.push({ kind: 'habits', at, count: ids.length }); }
     const cutoff = addDays(startOfDay(new Date()), -(days - 1));
@@ -270,7 +271,7 @@ export default function HistoryScreen() {
       </View>
     </View> : timeline.groups.length === 0 ? <Text style={styles.none}>Nothing here in the last {days} days.</Text> : timeline.groups.map((g) => <View key={g.label}>
       <Text style={styles.dayHeading}>{g.label}</Text>
-      {g.items.map((item, i) => <TimelineRow key={`${g.label}-${i}`} item={item} />)}
+      {g.items.map((item, i) => <TimelineRow key={`${g.label}-${i}`} item={item} onOpenJournal={(id) => navigation.navigate('Home', { screen: 'Journal', params: { openId: id } })} />)}
     </View>)}
     {hasAnything && timeline.olderExist ? <TouchableOpacity style={styles.more} onPress={() => setDays(days + PAGE_DAYS)}><Text style={styles.moreText}>Show earlier</Text></TouchableOpacity> : null}
   </ScrollView>;
@@ -301,7 +302,7 @@ function HealthCharts({ data }: { data: import('../lib/health').HealthDay[] }) {
   </View>;
 }
 
-function TimelineRow({ item }: { item: TimelineItem }) {
+function TimelineRow({ item, onOpenJournal }: { item: TimelineItem; onOpenJournal: (id: string) => void }) {
   const time = item.kind === 'habits' ? null : item.at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   const showTime = time && time !== '00:00' && time !== '12:00 AM';
   if (item.kind === 'mood') {
@@ -326,13 +327,14 @@ function TimelineRow({ item }: { item: TimelineItem }) {
     </View>;
   }
   if (item.kind === 'journal') {
-    return <View style={[styles.row, { borderLeftColor: '#c084fc' }]}>
+    return <TouchableOpacity style={[styles.row, { borderLeftColor: '#c084fc' }]} onPress={() => onOpenJournal(item.id)} accessibilityRole="button" accessibilityHint="Opens the full reflection">
       <Icon name="book-outline" size={22} color="#c084fc" />
       <View style={styles.rowBody}>
         <Text style={styles.rowTitle} numberOfLines={2}>{item.title}</Text>
         {item.nextStep ? <Text style={styles.rowText} numberOfLines={2}>Next step: {item.nextStep}</Text> : null}
       </View>
-    </View>;
+      <Icon name="chevron-forward" size={18} color="#64748b" />
+    </TouchableOpacity>;
   }
   return <View style={[styles.row, { borderLeftColor: '#f59e0b' }]}>
     <Icon name="checkmark-done-outline" size={22} color="#f59e0b" />
