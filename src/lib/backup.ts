@@ -10,14 +10,26 @@ import * as DocumentPicker from 'expo-document-picker';
 // Format: { app: "Wellbeing", backupVersion: 1, exportedAt, data: { <storage key>: <value> } }
 
 export const BACKUP_VERSION = 1;
-const MAX_BYTES = 5 * 1024 * 1024;
+/** One limit for export AND import, measured in UTF-8 bytes everywhere, so every exported file can be restored. */
+export const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
+export function utf8Bytes(s: string): number {
+  let n = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c < 0x80) n += 1; else if (c < 0x800) n += 2;
+    else if (c >= 0xd800 && c <= 0xdbff) { n += 4; i++; } // surrogate pair = one 4-byte character
+    else n += 3;
+  }
+  return n;
+}
 /** Daily coach state and the one-time account prompt are not worth restoring. Settings are excluded too:
  *  reminders and app lock must be switched on on the device itself. */
 export const BACKUP_KEYS: string[] = DATA_KEYS.filter((k) => k !== 'coach_session' && k !== 'account_prompt_seen');
 
 type Data = Record<string, unknown>;
 export type ParsedBackup = { exportedAt: string; data: Data; summary: { label: string; count: number }[]; skipped: number };
-export type RestoreResult = { ok: true } | { ok: false; rolledBack: boolean };
+/** pendingRecovery: an earlier interrupted restore still needs undoing, so this one didn't start (nothing changed). */
+export type RestoreResult = { ok: true } | { ok: false; rolledBack: boolean; pendingRecovery?: boolean };
 export class BackupError extends Error {}
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -37,6 +49,8 @@ export const backupFileName = (now = new Date()) =>
 /** Writes the backup to a real .json file and opens the share sheet (Save to Files, AirDrop, email…). */
 export async function exportBackup(): Promise<void> {
   const json = await buildBackup();
+  // Never hand out a file that Restore would refuse.
+  if (utf8Bytes(json) > MAX_BACKUP_BYTES) throw new BackupError('Your data is too large to fit in one backup file. Please contact support so we can help you keep it safe.');
   const name = backupFileName();
   if (Platform.OS === 'web') {
     const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
@@ -58,7 +72,7 @@ export async function pickBackupFile(): Promise<string | null> {
   const result = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', 'public.json'], copyToCacheDirectory: true, multiple: false });
   if (result.canceled || !result.assets?.length) return null;
   const asset = result.assets[0];
-  if (asset.size && asset.size > MAX_BYTES) throw new BackupError('That file is too large to be a Wellbeing backup.');
+  if (asset.size && asset.size > MAX_BACKUP_BYTES) throw new BackupError('That file is too large to be a Wellbeing backup.');
   if (Platform.OS === 'web') return asset.file ? asset.file.text() : (await fetch(asset.uri)).text();
   return new File(asset.uri).text();
 }
@@ -128,7 +142,7 @@ const RULES: Record<string, Rule> = {
 
 /** Validates a backup and summarises what it contains. Unknown keys and malformed records are dropped. */
 export function parseBackup(text: string): ParsedBackup {
-  if (text.length > MAX_BYTES) throw new BackupError('That file is too large to be a Wellbeing backup.');
+  if (utf8Bytes(text) > MAX_BACKUP_BYTES) throw new BackupError('That file is too large to be a Wellbeing backup.');
   let json: unknown;
   try { json = JSON.parse(text); } catch { throw new BackupError('This file could not be read. Choose a Wellbeing backup (.json) file.'); }
   if (!isPlainObject(json) || json.app !== 'Wellbeing' || !isPlainObject(json.data)) throw new BackupError('This file is not a Wellbeing backup.');
@@ -177,6 +191,11 @@ async function undo(snapshot: [string, string | null][]): Promise<void> {
 }
 
 async function writeSafely(sets: [string, string][], removes: string[]): Promise<RestoreResult> {
+  // An earlier restore that was interrupted must be undone first; its snapshot is the only copy of the
+  // original data, so it is never overwritten. If it can't be undone yet, this restore doesn't start.
+  let pending: string | null;
+  try { pending = await AsyncStorage.getItem(RECOVERY_KEY); } catch { return { ok: false, rolledBack: true }; }
+  if (pending && (await recoverInterruptedRestore()) === 'failed') return { ok: false, rolledBack: true, pendingRecovery: true };
   const snapshot = await AsyncStorage.multiGet(BACKUP_KEYS);
   const recovery: Recovery = { v: 1, startedAt: new Date().toISOString(), snapshot: snapshot.map(([k, v]) => [k, v]) };
   try {
@@ -202,18 +221,23 @@ async function writeSafely(sets: [string, string][], removes: string[]): Promise
   return { ok: true };
 }
 
-/** Call at app start: finishes undoing a restore that was interrupted. Safe to call any time. */
-export async function recoverInterruptedRestore(): Promise<boolean> {
+/**
+ * Call at app start: finishes undoing a restore that was interrupted. Safe to call any time.
+ * 'failed' means a recovery copy exists but couldn't be applied yet; it is kept for the next attempt.
+ */
+export async function recoverInterruptedRestore(): Promise<'none' | 'recovered' | 'failed'> {
+  let raw: string | null;
+  try { raw = await AsyncStorage.getItem(RECOVERY_KEY); } catch { return 'failed'; }
+  if (!raw) return 'none';
+  let recovery: Recovery;
+  try { recovery = JSON.parse(raw); } catch { return 'failed'; } // keep the copy; never discard it on a parse error
+  if (recovery?.v !== 1 || !Array.isArray(recovery.snapshot)) return 'failed';
   try {
-    const raw = await AsyncStorage.getItem(RECOVERY_KEY);
-    if (!raw) return false;
-    const recovery = JSON.parse(raw) as Recovery;
-    if (recovery?.v !== 1 || !Array.isArray(recovery.snapshot)) { await AsyncStorage.removeItem(RECOVERY_KEY); return false; }
     await undo(recovery.snapshot.filter(([k]) => BACKUP_KEYS.includes(k)));
     await AsyncStorage.removeItem(RECOVERY_KEY);
-    return true;
+    return 'recovered';
   } catch {
-    return false; // still stored; try again next launch
+    return 'failed';
   }
 }
 

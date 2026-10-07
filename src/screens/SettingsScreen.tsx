@@ -94,6 +94,7 @@ export default function SettingsScreen() {
     const run = async (mode: 'merge' | 'replace') => {
       let result: Awaited<ReturnType<typeof applyBackup>>;
       try { result = await applyBackup(backup, mode); } catch { result = { ok: false, rolledBack: false }; }
+      if (!result.ok && result.pendingRecovery) { Alert.alert('Restore not started', 'An earlier restore still needs to be finished first. Fully close and reopen Wellbeing, then try again. Nothing was changed.'); return; }
       if (result.ok) Alert.alert('Restored', 'Your backup has been restored. Fully close and reopen the app to refresh every screen.');
       else if (result.rolledBack) Alert.alert('Restore failed', 'Your data on this phone was kept as it was. Please try again.');
       else Alert.alert('Restore failed', 'A copy of your previous data was saved before the restore started. Fully close and reopen the app, and it will be put back automatically.');

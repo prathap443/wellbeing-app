@@ -45,3 +45,17 @@ export async function loadJournal(): Promise<{ ok: true; entries: JournalEntry[]
 export async function saveJournal(entries: JournalEntry[]): Promise<void> {
   await AsyncStorage.setItem(JOURNAL_KEY, JSON.stringify(entries));
 }
+
+/** Kept aside if a stored draft can't be read, so it is never silently overwritten. Cleared by Clear All Data. */
+export const JOURNAL_DRAFT_UNREADABLE_KEY = 'journal_draft_unreadable';
+
+export const sameDraft = (a: JournalDraft, b: JournalDraft) =>
+  a.situation === b.situation && a.thought === b.thought && a.perspective === b.perspective && a.nextStep === b.nextStep
+  && a.feelings.length === b.feelings.length && a.feelings.every((f, i) => f === b.feelings[i]);
+
+/**
+ * After a successful save: clear the draft only if it is still exactly what was saved. If the person
+ * kept typing while the save was in progress, their newer text is kept.
+ */
+export const draftAfterSave = (current: JournalDraft, saved: JournalDraft): { draft: JournalDraft; newerKept: boolean } =>
+  sameDraft(current, saved) ? { draft: EMPTY_DRAFT, newerKept: false } : { draft: current, newerKept: true };

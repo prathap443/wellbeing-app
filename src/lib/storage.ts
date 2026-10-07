@@ -25,7 +25,7 @@ export const SETTINGS_KEY = 'app_settings';
 /** Recovery copy kept while a backup restore is in progress (see backup.ts). */
 export const RECOVERY_KEY = 'backup_restore_recovery';
 /** Private data kept outside backups that Clear All Data must still delete. */
-export const PRIVATE_EXTRA_KEYS = ['therapy_companion_plan_unreadable', 'journal_draft'];
+export const PRIVATE_EXTRA_KEYS = ['therapy_companion_plan_unreadable', 'journal_draft', 'journal_draft_unreadable'];
 export const ONBOARDING_KEY = 'onboarding_complete';
 
 export type AppSettings = {

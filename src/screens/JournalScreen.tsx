@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { EMPTY_DRAFT, JOURNAL_DRAFT_KEY, JOURNAL_FIELD_MAX, entryId, entryTitle, loadJournal, newEntryId, saveJournal, type JournalDraft, type JournalEntry } from '../lib/journal';
+import { EMPTY_DRAFT, JOURNAL_DRAFT_KEY, JOURNAL_DRAFT_UNREADABLE_KEY, JOURNAL_FIELD_MAX, draftAfterSave, entryId, entryTitle, loadJournal, newEntryId, saveJournal, type JournalDraft, type JournalEntry } from '../lib/journal';
 
 const PROMPTS = [
   'What happened, without judging it?',
@@ -17,11 +17,16 @@ const PAGE = 20;
 export default function JournalScreen() {
   const params = (useRoute<any>().params ?? {}) as { prefill?: string; openId?: string };
   const [draft, setDraft] = useState<JournalDraft>(EMPTY_DRAFT);
-  const [draftReady, setDraftReady] = useState(false);
+  const draftRef = useRef(draft);
+  draftRef.current = draft; // always the latest text, including anything typed during a save
+  // Draft state: writes are only allowed once the stored draft has been read (or safely set aside).
+  const [draftLoad, setDraftLoad] = useState<'loading' | 'ok' | 'error'>('loading');
+  const [draftSaveFailed, setDraftSaveFailed] = useState(false);
+  const draftReady = draftLoad === 'ok';
   const [promptIndex, setPromptIndex] = useState(0);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [load, setLoad] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [save, setSave] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [save, setSave] = useState<'idle' | 'saving' | 'saved' | 'savedNewerKept' | 'error'>('idle');
   const [showAll, setShowAll] = useState(false);
   const [visible, setVisible] = useState(PAGE);
   const [open, setOpen] = useState<JournalEntry | null>(null);
@@ -44,20 +49,33 @@ export default function JournalScreen() {
   useEffect(() => { if (params.openId && load === 'ready') { const f = entries.find((e) => entryId(e) === params.openId); if (f) setOpen(f); } }, [params.openId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Unfinished writing is autosaved, so leaving the screen never loses it.
-  useEffect(() => {
-    AsyncStorage.getItem(JOURNAL_DRAFT_KEY).then((raw) => {
-      try { if (raw) { const d = JSON.parse(raw); setDraft({ ...EMPTY_DRAFT, ...d, feelings: Array.isArray(d.feelings) ? d.feelings : [] }); } } catch { /* unreadable draft: start fresh */ }
-    }).catch(() => undefined).finally(() => setDraftReady(true));
+  // If the stored draft can't be read, nothing is written (that would delete it); the form stays locked with Retry.
+  const loadDraft = useCallback(async () => {
+    setDraftLoad('loading');
+    let raw: string | null;
+    try { raw = await AsyncStorage.getItem(JOURNAL_DRAFT_KEY); } catch { setDraftLoad('error'); return; }
+    if (raw) {
+      try {
+        const d = JSON.parse(raw);
+        setDraft({ ...EMPTY_DRAFT, ...d, feelings: Array.isArray(d.feelings) ? d.feelings : [] });
+      } catch {
+        // Unreadable draft: keep a copy before anything replaces it. If that fails, don't continue.
+        try { await AsyncStorage.setItem(JOURNAL_DRAFT_UNREADABLE_KEY, raw); } catch { setDraftLoad('error'); return; }
+      }
+    }
+    setDraftLoad('ok');
   }, []);
+  useEffect(() => { loadDraft(); }, [loadDraft]);
   // Arriving from Anxiety support: start with the worry the user already wrote (never over existing text).
   useEffect(() => { if (draftReady && params.prefill) setDraft((d) => (d.situation.trim() ? d : { ...d, situation: params.prefill! })); }, [draftReady, params.prefill]);
   useEffect(() => {
     if (!draftReady) return;
     const empty = !draft.situation && !draft.thought && !draft.perspective && !draft.nextStep && !draft.feelings.length;
-    (empty ? AsyncStorage.removeItem(JOURNAL_DRAFT_KEY) : AsyncStorage.setItem(JOURNAL_DRAFT_KEY, JSON.stringify(draft))).catch(() => undefined);
+    (empty ? AsyncStorage.removeItem(JOURNAL_DRAFT_KEY) : AsyncStorage.setItem(JOURNAL_DRAFT_KEY, JSON.stringify(draft)))
+      .then(() => setDraftSaveFailed(false), () => setDraftSaveFailed(true)); // the draft note shows the real result
   }, [draft, draftReady]);
 
-  const update = (patch: Partial<JournalDraft>) => { setDraft((d) => ({ ...d, ...patch })); if (save === 'saved' || save === 'error') setSave('idle'); };
+  const update = (patch: Partial<JournalDraft>) => { setDraft((d) => ({ ...d, ...patch })); if (save !== 'saving' && save !== 'idle') setSave('idle'); };
   const toggleFeeling = (feeling: string) => update({ feelings: draft.feelings.includes(feeling) ? draft.feelings.filter((f) => f !== feeling) : [...draft.feelings, feeling] });
   const hasText = !!(draft.situation.trim() || draft.thought.trim() || draft.perspective.trim() || draft.nextStep.trim() || draft.feelings.length);
 
@@ -70,7 +88,7 @@ export default function JournalScreen() {
   };
 
   const saveEntry = async () => {
-    if (load !== 'ready' || save === 'saving') return;
+    if (load !== 'ready' || !draftReady || save === 'saving') return;
     if (!draft.situation.trim() && !draft.thought.trim()) {
       Alert.alert('Start with one thought', 'Write what happened or what is on your mind.');
       return;
@@ -86,12 +104,15 @@ export default function JournalScreen() {
       nextStep: draft.nextStep.trim(),
     };
     setSave('saving');
+    const saved = draft; // exactly what this save contains
     const updated = [entry, ...entries]; // every reflection is kept: no silent removal of older ones
     try {
       await saveJournal(updated);
       setEntries(updated);
-      setDraft(EMPTY_DRAFT);
-      setSave('saved');
+      // Only clear the form if nothing was typed while saving; newer text is kept as the draft.
+      const after = draftAfterSave(draftRef.current, saved);
+      setDraft(after.draft);
+      setSave(after.newerKept ? 'savedNewerKept' : 'saved');
     } catch {
       setSave('error'); // the draft is kept, so Retry saves exactly this reflection
     }
@@ -116,20 +137,23 @@ export default function JournalScreen() {
   return <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
     <View style={styles.header}><Icon name="book-outline" size={30} color="#c4b5fd" /><Text style={styles.title}>Reflect with clarity</Text><Text style={styles.subtitle}>Name what is happening, create space around it, and choose one gentle next step.</Text></View>
     <View style={styles.promptCard}><View style={styles.promptTop}><Text style={styles.promptLabel}>GUIDED REFLECTION</Text><TouchableOpacity onPress={() => setPromptIndex((promptIndex + 1) % PROMPTS.length)} accessibilityLabel="Another prompt"><Icon name="refresh-outline" size={19} color="#c4b5fd" /></TouchableOpacity></View><Text style={styles.prompt}>{PROMPTS[promptIndex]}</Text></View>
-    <Text style={styles.sectionTitle}>1. What happened?</Text><TextInput style={styles.shortInput} value={draft.situation} onChangeText={(v) => update({ situation: v })} maxLength={JOURNAL_FIELD_MAX} placeholder="Describe the situation or moment" placeholderTextColor="#64748b" multiline />
+    <Text style={styles.sectionTitle}>1. What happened?</Text><TextInput style={styles.shortInput} value={draft.situation} onChangeText={(v) => update({ situation: v })} editable={draftReady} maxLength={JOURNAL_FIELD_MAX} placeholder="Describe the situation or moment" placeholderTextColor="#64748b" multiline />
     <Text style={styles.sectionTitle}>2. What are you feeling?</Text><View style={styles.feelings}>{FEELINGS.map((feeling) => <TouchableOpacity key={feeling} onPress={() => toggleFeeling(feeling)} style={[styles.feelingChip, draft.feelings.includes(feeling) && styles.feelingChipSelected]}><Text style={[styles.feelingText, draft.feelings.includes(feeling) && styles.feelingTextSelected]}>{feeling}</Text></TouchableOpacity>)}</View>
-    <Text style={styles.sectionTitle}>3. What is your mind saying?</Text><TextInput style={styles.shortInput} value={draft.thought} onChangeText={(v) => update({ thought: v })} maxLength={JOURNAL_FIELD_MAX} placeholder="For example: 'I am going to mess this up'" placeholderTextColor="#64748b" multiline />
-    <View style={styles.reframeCard}><View style={styles.reframeHeading}><Icon name="heart-outline" size={20} color="#f0abfc" /><Text style={styles.reframeTitle}>A more balanced perspective</Text></View><Text style={styles.helper}>What would you say to a friend in this exact situation?</Text><TextInput style={styles.reframeInput} value={draft.perspective} onChangeText={(v) => update({ perspective: v })} maxLength={JOURNAL_FIELD_MAX} placeholder="Write a fairer, kinder response" placeholderTextColor="#a78bfa" multiline /></View>
-    <Text style={styles.sectionTitle}>4. One small next step</Text><TextInput style={styles.shortInput} value={draft.nextStep} onChangeText={(v) => update({ nextStep: v })} maxLength={JOURNAL_FIELD_MAX} placeholder="Something realistic you can do next" placeholderTextColor="#64748b" />
-    {hasText && save !== 'saved' ? <Text style={styles.draftNote}>Draft kept on this phone until you save or clear it.</Text> : null}
+    <Text style={styles.sectionTitle}>3. What is your mind saying?</Text><TextInput style={styles.shortInput} value={draft.thought} onChangeText={(v) => update({ thought: v })} editable={draftReady} maxLength={JOURNAL_FIELD_MAX} placeholder="For example: 'I am going to mess this up'" placeholderTextColor="#64748b" multiline />
+    <View style={styles.reframeCard}><View style={styles.reframeHeading}><Icon name="heart-outline" size={20} color="#f0abfc" /><Text style={styles.reframeTitle}>A more balanced perspective</Text></View><Text style={styles.helper}>What would you say to a friend in this exact situation?</Text><TextInput style={styles.reframeInput} value={draft.perspective} onChangeText={(v) => update({ perspective: v })} editable={draftReady} maxLength={JOURNAL_FIELD_MAX} placeholder="Write a fairer, kinder response" placeholderTextColor="#a78bfa" multiline /></View>
+    <Text style={styles.sectionTitle}>4. One small next step</Text><TextInput style={styles.shortInput} value={draft.nextStep} onChangeText={(v) => update({ nextStep: v })} editable={draftReady} maxLength={JOURNAL_FIELD_MAX} placeholder="Something realistic you can do next" placeholderTextColor="#64748b" />
+    {draftLoad === 'error' ? <View style={styles.errorBox}><Icon name="alert-circle-outline" size={20} color="#fca5a5" /><Text style={styles.errorText}>Couldn't open your saved draft. Nothing has been changed.</Text><TouchableOpacity onPress={loadDraft}><Text style={styles.retry}>Retry</Text></TouchableOpacity></View>
+      : hasText && save !== 'saved' ? (draftSaveFailed
+        ? <Text style={[styles.draftNote, styles.draftWarn]}>Couldn't keep this draft on your phone. Save it before leaving.</Text>
+        : <Text style={styles.draftNote}>Draft kept on this phone until you save or clear it.</Text>) : null}
     <View style={styles.actions}>
-      <TouchableOpacity style={styles.clearButton} onPress={clearForm} disabled={!hasText}><Text style={[styles.clearText, !hasText && styles.dim]}>Clear</Text></TouchableOpacity>
-      <TouchableOpacity style={[styles.saveButton, (load !== 'ready' || save === 'saving') && styles.saveDisabled]} onPress={saveEntry} disabled={load !== 'ready' || save === 'saving'} accessibilityRole="button">
+      <TouchableOpacity style={styles.clearButton} onPress={clearForm} disabled={!hasText || !draftReady}><Text style={[styles.clearText, !hasText && styles.dim]}>Clear</Text></TouchableOpacity>
+      <TouchableOpacity style={[styles.saveButton, (load !== 'ready' || !draftReady || save === 'saving') && styles.saveDisabled]} onPress={saveEntry} disabled={load !== 'ready' || !draftReady || save === 'saving'} accessibilityRole="button">
         {save === 'saving' ? <ActivityIndicator color="#fff" /> : <Icon name="save-outline" size={19} color="#fff" />}
         <Text style={styles.saveText}>{save === 'saving' ? 'Saving…' : 'Save reflection'}</Text>
       </TouchableOpacity>
     </View>
-    {save === 'saved' ? <View style={styles.saved}><Icon name="checkmark-circle-outline" size={20} color="#a7f3d0" /><Text style={styles.savedText}>Reflection saved privately on this device.</Text></View> : null}
+    {save === 'saved' || save === 'savedNewerKept' ? <View style={styles.saved}><Icon name="checkmark-circle-outline" size={20} color="#a7f3d0" /><Text style={styles.savedText}>{save === 'saved' ? 'Reflection saved privately on this device.' : 'Saved. Your newer changes are still in the draft.'}</Text></View> : null}
     {save === 'error' ? <View style={styles.errorBox}><Icon name="alert-circle-outline" size={20} color="#fca5a5" /><Text style={styles.errorText}>Couldn't save. Your writing is still here.</Text><TouchableOpacity onPress={saveEntry}><Text style={styles.retry}>Retry</Text></TouchableOpacity></View> : null}
 
     <Text style={styles.recent}>Your reflections{entries.length ? ` (${entries.length})` : ''}</Text>
@@ -171,7 +195,7 @@ const styles = StyleSheet.create({
   reframeCard: { backgroundColor: '#4a1d45', borderRadius: 16, padding: 16, marginTop: 22 }, reframeHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 }, reframeTitle: { color: '#fce7f3', fontSize: 16, fontWeight: '700' }, helper: { color: '#f0abfc', fontSize: 12, lineHeight: 18, marginTop: 8 }, reframeInput: { minHeight: 70, backgroundColor: 'rgba(76,29,72,0.7)', borderColor: '#86198f', borderWidth: 1, borderRadius: 12, padding: 12, color: '#fce7f3', marginTop: 12, textAlignVertical: 'top' },
   actions: { flexDirection: 'row', gap: 10, marginTop: 22 }, clearButton: { width: 86, borderColor: '#475569', borderWidth: 1, borderRadius: 25, justifyContent: 'center', alignItems: 'center' }, clearText: { color: '#cbd5e1', fontWeight: '700' }, saveButton: { flex: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: '#8b5cf6', borderRadius: 25, paddingVertical: 15 }, saveText: { color: '#fff', fontSize: 16, fontWeight: '700' }, saved: { flexDirection: 'row', gap: 8, alignItems: 'center', backgroundColor: '#12372f', borderRadius: 12, padding: 13, marginTop: 14 }, savedText: { color: '#a7f3d0', fontSize: 13, fontWeight: '600' },
   recent: { color: '#f8fafc', fontSize: 18, fontWeight: '700', marginTop: 29, marginBottom: 12 }, empty: { color: '#64748b', textAlign: 'center', marginVertical: 20 }, entry: { backgroundColor: '#1e293b', padding: 16, borderRadius: 14, marginBottom: 10 }, entryTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 }, entryDate: { color: '#94a3b8', fontSize: 11 }, entryFeelings: { color: '#c4b5fd', fontSize: 11, flex: 1, textAlign: 'right' }, entryText: { color: '#e2e8f0', fontSize: 14, lineHeight: 20, marginTop: 8 }, entryStep: { color: '#a7f3d0', fontSize: 12, marginTop: 10 },
-  draftNote: { color: '#64748b', fontSize: 12, marginTop: 14 }, dim: { opacity: 0.4 }, saveDisabled: { opacity: 0.5 },
+  draftNote: { color: '#64748b', fontSize: 12, marginTop: 14 }, draftWarn: { color: '#fca5a5' }, dim: { opacity: 0.4 }, saveDisabled: { opacity: 0.5 },
   errorBox: { flexDirection: 'row', gap: 8, alignItems: 'center', backgroundColor: '#3f1d1d', borderRadius: 12, padding: 13, marginTop: 14 }, errorText: { color: '#fecaca', fontSize: 13, flex: 1 }, retry: { color: '#93c5fd', fontWeight: '800' },
   openLink: { color: '#c4b5fd', fontSize: 12, fontWeight: '700', marginTop: 10 }, more: { alignItems: 'center', padding: 12 }, moreText: { color: '#c4b5fd', fontWeight: '700' },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(2,6,23,0.75)', justifyContent: 'flex-end' }, modalCard: { backgroundColor: '#1e293b', borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, maxHeight: '88%', width: '100%', maxWidth: 720, alignSelf: 'center' },
