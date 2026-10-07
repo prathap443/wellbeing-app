@@ -24,6 +24,7 @@ import PlannerScreen from '../screens/PlannerScreen';
 import MeditationScreen from '../screens/MeditationScreen';
 import TherapyCompanionScreen from '../screens/TherapyCompanionScreen';
 import AnxietySupportScreen from '../screens/AnxietySupportScreen';
+import BubbleReleaseScreen from '../screens/BubbleReleaseScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
 import CoachScreen from '../screens/CoachScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
@@ -84,6 +85,7 @@ const HomeStack = () => (
     <Stack.Screen name="Meditation" component={MeditationScreen} options={toolOptions('Meditation')} />
     <Stack.Screen name="TherapyCompanion" component={TherapyCompanionScreen} options={toolOptions('Therapy companion')} />
     <Stack.Screen name="AnxietySupport" component={AnxietySupportScreen} options={toolOptions('Anxiety support')} />
+    <Stack.Screen name="BubbleRelease" component={BubbleReleaseScreen} options={toolOptions('Bubble release')} />
     <Stack.Screen name="Coach" component={CoachScreen} options={{ title: 'AI coach' }} />
     <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Wellbeing Plus' }} />
     <Stack.Screen name="Account" options={{ title: 'Account' }}>{() => <AccountScreen />}</Stack.Screen>

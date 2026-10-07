@@ -155,6 +155,7 @@ Choose "Yes, we collect data". No data is used for tracking.
 • Apple Health: see your sleep and steps next to your moods (optional, read-only, stays on your iPhone)
 • History redesign: mood calendar, weekly summary and 14-day sleep, energy and stress trends
 • Therapy companion: start a fresh plan after each session
+• Bubble release: a calm, no-pressure 3-minute game paced by a breathing circle
 • Fixes, including a crash when leaving a meditation
 ```
 

@@ -39,6 +39,7 @@ type RootStackParamList = {
   Coach: undefined;
   Subscription: undefined;
   AnxietySupport: undefined;
+  BubbleRelease: undefined;
 };
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -232,6 +233,11 @@ export default function HomeScreen() {
             <Icon name="leaf-outline" size={22} color="#5eead4" />
             <Text style={styles.toolTitle}>Breathe</Text>
             <Text style={styles.toolText}>Box breathing</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('BubbleRelease')}>
+            <Icon name="ellipse-outline" size={22} color="#7dd3fc" />
+            <Text style={styles.toolTitle}>Bubble release</Text>
+            <Text style={styles.toolText}>A calm 3-minute game</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('Resources')}>
             <Icon name="compass-outline" size={22} color="#60a5fa" />
