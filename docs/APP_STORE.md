@@ -81,7 +81,7 @@ PRIVATE BY DESIGN
 • Accounts are optional; the app works fully without one
 
 WELLBEING PLUS
-Upgrade for 30 AI coach questions a day and keep Plus on all your devices with a free account. Plus is available as a monthly or annual auto-renewing subscription. Payment is charged to your Apple account and renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel any time in your App Store account settings.
+Upgrade to unlock all 8 soundscapes and the guided ritual for all 8 teas, get 30 AI coach questions a day, and keep Plus on all your devices with a free account. Plus is available as a monthly or annual auto-renewing subscription. Payment is charged to your Apple account and renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel any time in your App Store account settings.
 
 Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://wellbeing-app.replit.app/privacy
@@ -122,7 +122,7 @@ AGE: Rated 18+; the app is intended for adults.
 | Plus Monthly | com.pradiconsulting.wellbeing.plus.monthly | 1 month | £4.99 |
 | Plus Annual | com.pradiconsulting.wellbeing.plus.annual | 1 year | £39.99 |
 
-Both: display name "Wellbeing Plus", description "30 AI coach questions a day", review screenshot of the paywall (Settings > Wellbeing Plus), review note "Unlocks 30 AI coach questions per day (free users get 5). Manage via Settings > Subscriptions." Submit them together with version 1.0 (select them in the version's In-App Purchases and Subscriptions section).
+Both: display name "Wellbeing Plus", description "All soundscapes, tea rituals, 30 coach questions/day" (Apple allows 55 characters; this is 52), review screenshot of the paywall (Settings > Wellbeing Plus), review note "Unlocks all 8 soundscapes, the guided ritual for all 8 teas and 30 AI coach questions per day. Free users get 2 soundscapes, 2 tea rituals, every tea's information and cautions, the daily pause videos and 5 coach questions a day. Manage via Settings > Subscriptions." Submit them together with version 1.4 (select them in the version's In-App Purchases and Subscriptions section).
 
 ## 6. App Privacy (Data Types)
 
@@ -144,7 +144,7 @@ Choose "Yes, we collect data". No data is used for tracking.
 - [ ] Publishing is set to **Reserved VM** (not Autoscale)
 - [ ] Demo account created and its password reset tested once
 - [ ] TestFlight: sandbox purchase of Plus works and the coach shows 30 questions
-- [ ] Screenshots uploaded (6.5" set)
+- [ ] Screenshots uploaded (6.5" set, 1284 x 2778): home, today's pause, soundscapes, sleep timer, tea rituals, chamomile, what helps me
 - [ ] EU and Swiss representative appointed if launching in those countries
 
 ## Version 1.1 – Apple Health
