@@ -3,7 +3,7 @@ import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacit
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useSession } from '../lib/session';
-import { SOUNDSCAPES, cachedUri, canPlay, saveForOffline, soundscapeUrl } from '../lib/soundscapes';
+import { NotAudioError, SOUNDSCAPES, cachedUri, canPlay, forgetCached, saveForOffline, soundscapeUrl } from '../lib/soundscapes';
 import { Looper } from '../lib/looper';
 import { useActivitySession } from '../lib/useActivitySession';
 import FeedbackCard from '../components/FeedbackCard';
@@ -25,17 +25,23 @@ export default function SoundscapePlayerScreen() {
   const [listened, setListened] = useState(0);
   const [ended, setEnded] = useState<'sleep' | 'done' | null>(null);
   const looper = useRef<Looper | null>(null);
+  const healthTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [errorText, setErrorText] = useState("Couldn't load this soundscape. Check your connection.");
   const session = useActivitySession('soundscape');
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (fresh = false) => {
     if (!track) return;
     setState('preparing');
+    if (fresh) forgetCached(track.id); // Retry: download again rather than reuse a saved copy
     looper.current?.destroy(); looper.current = null;
     let source = cachedUri(track.id);
     if (source) setOffline('saved');
     else {
       try { source = await saveForOffline(track.id); setOffline(source.startsWith('http') ? null : 'saved'); }
-      catch { source = soundscapeUrl(track.id); setOffline('streaming'); } // couldn't save: play online instead
+      catch (e) {
+        if (e instanceof NotAudioError) { setErrorText("The sound couldn't be downloaded properly. Please try again in a moment."); setState('error'); return; }
+        source = soundscapeUrl(track.id); setOffline('streaming'); // network problem saving: play online instead
+      }
     }
     try {
       await Looper.prepareAudioSession();
@@ -45,6 +51,7 @@ export default function SoundscapePlayerScreen() {
       looper.current = l;
       setState('ready');
     } catch {
+      setErrorText("Couldn't load this soundscape. Check your connection.");
       setState('error');
     }
   }, [track]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -52,7 +59,7 @@ export default function SoundscapePlayerScreen() {
   useEffect(() => {
     if (track && !canPlay(track, plus)) { navigation.replace('Subscription'); return; }
     load();
-    return () => { looper.current?.destroy(); looper.current = null; };
+    return () => { looper.current?.destroy(); looper.current = null; if (healthTimer.current) clearTimeout(healthTimer.current); };
   }, [track?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!track) return <View style={[styles.page, styles.center]}><Text style={styles.subtitle}>This soundscape isn't available.</Text></View>;
@@ -60,7 +67,18 @@ export default function SoundscapePlayerScreen() {
   const toggle = () => {
     const l = looper.current; if (!l) return;
     if (playing) { l.pause(); session.pause(); setPlaying(false); }
-    else { setEnded(null); session.begin(); l.play(); setPlaying(true); }
+    else {
+      setEnded(null); session.begin(); l.play(); setPlaying(true);
+      // If nothing is actually playing after 8 seconds, say so (with Retry) instead of staying silent.
+      if (healthTimer.current) clearTimeout(healthTimer.current);
+      healthTimer.current = setTimeout(() => {
+        if (looper.current === l && l.playing && !l.isProgressing()) {
+          l.pause(); setPlaying(false);
+          setErrorText("This soundscape didn't start playing. Tap Retry to download it again.");
+          setState('error');
+        }
+      }, 8000);
+    }
   };
   const chooseTimer = (m: number | null) => { setTimer(m); looper.current?.setSleepTimer(m); setRemaining(looper.current?.sleepRemainingMs() ?? null); };
   const done = () => {
@@ -78,7 +96,7 @@ export default function SoundscapePlayerScreen() {
       <Text style={styles.subtitle}>{track.subtitle}</Text>
 
       {state === 'preparing' ? <View style={styles.status}><ActivityIndicator color="#e2e8f0" /><Text style={styles.statusText}>Preparing (first time only)…</Text></View>
-        : state === 'error' ? <View style={styles.status}><Icon name="cloud-offline-outline" size={18} color="#fca5a5" /><Text style={styles.errorText}>Couldn't load this soundscape. Check your connection.</Text><TouchableOpacity onPress={load}><Text style={styles.retry}>Retry</Text></TouchableOpacity></View>
+        : state === 'error' ? <View style={styles.status}><Icon name="cloud-offline-outline" size={18} color="#fca5a5" /><Text style={styles.errorText}>{errorText}</Text><TouchableOpacity onPress={() => load(true)}><Text style={styles.retry}>Retry</Text></TouchableOpacity></View>
         : <TouchableOpacity style={styles.play} onPress={toggle} accessibilityRole="button" accessibilityLabel={playing ? 'Pause' : 'Play'}>
             <Icon name={playing ? 'pause' : 'play'} size={38} color="#0f172a" style={playing ? undefined : { marginLeft: 4 }} />
           </TouchableOpacity>}

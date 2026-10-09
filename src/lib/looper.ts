@@ -105,6 +105,9 @@ export class Looper {
     }
   }
 
+  /** Playback health: true once the active player has actually loaded and moved forward. */
+  isProgressing() { const p = this.players[this.active]; return p.isLoaded && p.currentTime > 0; }
+
   destroy() {
     this.stopped = true;
     this.pause();
