@@ -244,6 +244,12 @@ export function createApp({ users, sessionSecret, coachEnabled, plusCheck = (id)
     setHeaders: (res) => res.setHeader('Content-Type', 'audio/mp4'),
   }));
 
+  // Short pause videos (original, owned). Same rules as the soundscapes: range requests, long cache, 404s.
+  app.use('/motivation', express.static(fileURLToPath(new URL('../public/motivation/', import.meta.url)), {
+    maxAge: '30d', immutable: true, fallthrough: false,
+    setHeaders: (res) => res.setHeader('Content-Type', 'video/mp4'),
+  }));
+
   // Browser preview: serve the exported web app from the same origin (see scripts/preview-web.sh).
   if (webDist) {
     const dist = path.resolve(webDist);

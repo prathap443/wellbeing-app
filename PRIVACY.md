@@ -15,9 +15,9 @@ This policy explains what the Wellbeing app ("Wellbeing", "we") collects, why, a
 
 Mood entries, daily check-ins, journal reflections, mental state plans, habits and goals, meditation progress, your activity history and "Did this help?" answers, therapy companion notes, trusted contacts and settings are saved in the app's private storage on your device. We have no access to them. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.
 
-## Soundscapes
+## Soundscapes and short pause videos
 
-The first time you play a soundscape, the audio is downloaded from our server and then kept on your phone, so it plays offline afterwards. As with any download, this shares your device's IP address with our hosting provider. We don't record which soundscapes you play; your listening and "Did this help?" answers stay in the activity history on your phone.
+The first time you play a soundscape or a short pause video, it is downloaded from our server and then kept on your phone, so it plays offline afterwards. As with any download, this shares your device's IP address with our hosting provider. We don't record which soundscapes or videos you play; your listening and "Did this help?" answers stay in the activity history on your phone.
 
 ## Backups
 

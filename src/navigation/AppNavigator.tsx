@@ -29,6 +29,7 @@ import SoundscapesScreen from '../screens/SoundscapesScreen';
 import SoundscapePlayerScreen from '../screens/SoundscapePlayerScreen';
 import TeaRitualsScreen from '../screens/TeaRitualsScreen';
 import TeaScreen from '../screens/TeaScreen';
+import PauseScreen from '../screens/PauseScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
 import CoachScreen from '../screens/CoachScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
@@ -94,6 +95,7 @@ const HomeStack = () => (
     <Stack.Screen name="SoundscapePlayer" component={SoundscapePlayerScreen} options={toolOptions('Soundscape')} />
     <Stack.Screen name="TeaRituals" component={TeaRitualsScreen} options={toolOptions('Tea rituals')} />
     <Stack.Screen name="Tea" component={TeaScreen} options={toolOptions('Tea ritual')} />
+    <Stack.Screen name="Pause" component={PauseScreen} options={toolOptions('A short pause')} />
     <Stack.Screen name="Coach" component={CoachScreen} options={{ title: 'AI coach' }} />
     <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Wellbeing Plus' }} />
     <Stack.Screen name="Account" options={{ title: 'Account' }}>{() => <AccountScreen />}</Stack.Screen>

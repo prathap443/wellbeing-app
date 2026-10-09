@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useSession } from '../lib/session';
 import { SOUNDSCAPES, SOUNDSCAPE_GROUPS, SOUNDSCAPES_BANNER, canPlay } from '../lib/soundscapes';
+import { PAUSES } from '../lib/pauses';
 
 export default function SoundscapesScreen() {
   const navigation = useNavigation<any>();
@@ -18,6 +19,14 @@ export default function SoundscapesScreen() {
       <Text style={styles.bannerTitle}>Soundscapes</Text>
       <Text style={styles.bannerText}>Original sounds to calm, focus and sleep. Set a timer and let them play with your screen locked.</Text>
     </View>
+    <Text style={styles.group}>Short pauses</Text>
+    <Text style={styles.pausesIntro}>12-second calm videos with a few kind words. Free for everyone.</Text>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pausesRow}>
+      {PAUSES.map((p) => <TouchableOpacity key={p.id} style={styles.pauseItem} onPress={() => navigation.navigate('Pause', { id: p.id })} accessibilityRole="button" accessibilityLabel={`Pause video: ${p.title}`}>
+        <Image source={p.poster} style={styles.pausePoster} resizeMode="cover" />
+        <Text style={styles.pauseTitle} numberOfLines={2}>{p.title}</Text>
+      </TouchableOpacity>)}
+    </ScrollView>
     {SOUNDSCAPE_GROUPS.map((group) => <View key={group}>
       <Text style={styles.group}>{group}</Text>
       <View style={styles.grid}>
@@ -45,6 +54,11 @@ export default function SoundscapesScreen() {
 }
 
 const styles = StyleSheet.create({
+  pausesIntro: { color: '#94a3b8', fontSize: 13, marginTop: -6, marginBottom: 12 },
+  pausesRow: { gap: 12, paddingRight: 8 },
+  pauseItem: { width: 112 },
+  pausePoster: { width: 112, height: 199, borderRadius: 16, backgroundColor: '#1e293b' },
+  pauseTitle: { color: '#e2e8f0', fontSize: 13, fontWeight: '700', marginTop: 6, lineHeight: 17 },
   fill: { width: '100%', height: '100%' }, // explicit size: otherwise web renders images at their natural pixel size
   page: { flex: 1, backgroundColor: '#0f172a' },
   container: { padding: 20, paddingBottom: 40, width: '100%', maxWidth: 720, alignSelf: 'center' },

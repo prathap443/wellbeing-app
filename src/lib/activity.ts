@@ -10,7 +10,7 @@ export const MIN_RATINGS = 3;
 /** Evidence looks at the most recent rated sessions only, so old habits don't dominate forever. */
 const EVIDENCE_WINDOW = 10;
 
-export type Tool = 'breathe' | 'grounding' | 'meditation' | 'bubbles' | 'sleep_reset' | 'soundscape' | 'tea';
+export type Tool = 'breathe' | 'grounding' | 'meditation' | 'bubbles' | 'sleep_reset' | 'soundscape' | 'tea' | 'pause';
 export type Feeling = 'stressed' | 'anxious' | 'low_energy' | 'cant_switch_off';
 export type Rating = 'worse' | 'same' | 'better' | 'much_better';
 
@@ -27,7 +27,7 @@ export type ActivityRecord = {
   ratedAt?: string;
 };
 
-const TOOLS: Tool[] = ['breathe', 'grounding', 'meditation', 'bubbles', 'sleep_reset', 'soundscape', 'tea'];
+const TOOLS: Tool[] = ['breathe', 'grounding', 'meditation', 'bubbles', 'sleep_reset', 'soundscape', 'tea', 'pause'];
 export const FEELINGS: Feeling[] = ['stressed', 'anxious', 'low_energy', 'cant_switch_off'];
 const RATINGS: Rating[] = ['worse', 'same', 'better', 'much_better'];
 
@@ -115,7 +115,7 @@ export function rateActivity(id: string, after: Rating): Promise<void> {
 
 // ---------- Suggestions ----------
 
-export type Suggestable = Exclude<Tool, 'sleep_reset' | 'soundscape' | 'tea'>;
+export type Suggestable = Exclude<Tool, 'sleep_reset' | 'soundscape' | 'tea' | 'pause'>;
 export const TOOL_INFO: Record<Suggestable, { title: string; route: string; icon: string; minutes: number[] }> = {
   breathe: { title: 'Box breathing', route: 'Breathe', icon: 'leaf-outline', minutes: [1, 3, 5] },
   grounding: { title: '5-4-3-2-1 grounding', route: 'Grounding', icon: 'water-outline', minutes: [1, 3, 5] },

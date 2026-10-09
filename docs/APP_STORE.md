@@ -190,6 +190,7 @@ WHAT HELPS ME (new in 1.2): Home > "What helps me?" suggests an in-app exercise 
 **What's New in This Version**
 
 ```
+• Today's pause: a new 12-second calm video each day, with 8 to rewatch, free for everyone
 • Soundscapes: 8 original sounds for calm, focus and sleep, with a sleep timer and offline playback
 • Tea rituals: turn a caffeine-free tea into a guided, unhurried pause; every tea's information and cautions are free to read
 • Wellbeing Plus now unlocks all soundscapes and tea rituals (2 of each are free)
@@ -199,6 +200,7 @@ WHAT HELPS ME (new in 1.2): Home > "What helps me?" suggests an in-app exercise 
 **Add to the review notes**
 
 ```
+PAUSE VIDEOS (new in 1.4): Home > Today's pause, and Home > Soundscapes > Short pauses. Eight 12-second original videos owned by the developer (AI-assisted visuals and voice, no third-party footage or music). Free for all users; the spoken words are also shown as text. Streamed from our server and cached on the device.
 SOUNDSCAPES (new in 1.4): Home > Soundscapes. Eight original audio tracks owned by the developer (no third-party music). Two are free; six require Wellbeing Plus. Audio streams from our server and is cached on the device for offline play; it continues with the screen locked (background audio), with an optional sleep timer.
 TEA RITUALS (new in 1.4): Home > Tea rituals. Eight common caffeine-free herbal teas presented as a guided mindfulness pause (brew timer and five reflective steps). Content is informational and conservative: no treatment or "clinically proven" claims, an honest evidence label on each tea, and specific cautions (allergies, pregnancy, medication). Herbs with known interaction risks for people taking mental-health medication (e.g. St John's wort, kava, valerian) are deliberately excluded. No products are sold or linked. Every tea's information and safety cautions can be read without subscribing; for six of the eight teas the guided ritual requires Wellbeing Plus.
 PLUS CONTENT: To review Plus content without purchasing, use the demo account below (Plus is granted in RevenueCat) or a sandbox purchase.

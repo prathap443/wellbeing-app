@@ -8,6 +8,7 @@ import {
   TextInput,
   Dimensions,
   Platform,
+  Image,
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,6 +21,7 @@ import { useSession } from '../lib/session';
 import { formatSleep, formatSteps } from '../lib/health';
 import { useHealth } from '../lib/useHealth';
 import WhatHelpsCard from '../components/WhatHelpsCard';
+import { todaysPause } from '../lib/pauses';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -42,6 +44,7 @@ type RootStackParamList = {
   AnxietySupport: undefined;
   BubbleRelease: undefined;
   Soundscapes: undefined;
+  Pause: { id: string };
   TeaRituals: undefined;
 };
 
@@ -208,6 +211,19 @@ export default function HomeScreen() {
 
       <WhatHelpsCard />
 
+      {(() => {
+        const pause = todaysPause();
+        return <TouchableOpacity style={styles.pauseCard} onPress={() => navigation.navigate('Pause', { id: pause.id })} accessibilityRole="button" accessibilityLabel={`Today's pause: ${pause.title}. 12 second video.`}>
+          <Image source={pause.poster} style={styles.pausePoster} accessibilityIgnoresInvertColors />
+          <View style={styles.pauseBody}>
+            <Text style={styles.pauseLabel}>TODAY'S PAUSE</Text>
+            <Text style={styles.pauseTitle}>{pause.title}</Text>
+            <Text style={styles.pauseText}>A 12-second moment to breathe</Text>
+          </View>
+          <Icon name="play-circle" size={34} color="#fcd34d" />
+        </TouchableOpacity>;
+      })()}
+
       {health.connected && health.hasData && health.data ? (() => {
         const today = health.data[health.data.length - 1];
         const parts = [
@@ -342,6 +358,12 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  pauseCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#1e293b', borderRadius: 18, padding: 12, marginHorizontal: 20, marginTop: 12 },
+  pausePoster: { width: 54, height: 96, borderRadius: 10, backgroundColor: '#0f172a' },
+  pauseBody: { flex: 1 },
+  pauseLabel: { color: '#fcd34d', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  pauseTitle: { color: '#f8fafc', fontSize: 16, fontWeight: '800', marginTop: 4 },
+  pauseText: { color: '#94a3b8', fontSize: 13, marginTop: 3 },
   healthCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#1e293b', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginHorizontal: 20, marginTop: 12 },
   healthText: { flex: 1, color: '#e2e8f0', fontSize: 13, fontWeight: '600' },
   container: {
