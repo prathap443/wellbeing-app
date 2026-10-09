@@ -24,6 +24,12 @@ In the app, go to **Settings → Account → Delete account**. This permanently 
 **How do I delete my moods and journal?**
 They are stored only on your device. Use **Settings → Clear All Data**, or delete the app.
 
+**Do soundscapes work offline?**
+Yes, after the first play. Each soundscape downloads once and is then kept on your phone. To keep one playing while you sleep, set the sleep timer and lock your screen: it fades out gently at the end.
+
+**Are the tea rituals safe for me?**
+They use common caffeine-free teas, and each tea lists its own cautions. They are a calming ritual, not a treatment. If you are pregnant, breastfeeding or take regular medication, check with a pharmacist or your GP first.
+
 **How do I back up or move my data to a new phone?**
 Use **Settings → Back up data** and save the file somewhere safe, such as iCloud Drive or Files. On the new phone, install Wellbeing and use **Settings → Restore from backup**. Choose **Merge** to keep what is already there, or **Replace** to use only the backup. Backups contain your private notes, so keep them safe.
 

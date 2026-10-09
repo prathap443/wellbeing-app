@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express, { type Request, type Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODEL, answerQuestion, suggestQuestions } from './coach.js';
@@ -235,6 +236,13 @@ export function createApp({ users, sessionSecret, coachEnabled, plusCheck = (id)
 
   // Public privacy policy and support pages for the App Store listing.
   registerPages(app);
+
+  // Soundscape audio (original, owned). Supports range requests so players can stream; long cache because
+  // the app versions the URLs. Nothing about who listens is stored.
+  app.use('/soundscapes', express.static(fileURLToPath(new URL('../public/soundscapes/', import.meta.url)), {
+    maxAge: '30d', immutable: true, fallthrough: false,
+    setHeaders: (res) => res.setHeader('Content-Type', 'audio/mp4'),
+  }));
 
   // Browser preview: serve the exported web app from the same origin (see scripts/preview-web.sh).
   if (webDist) {

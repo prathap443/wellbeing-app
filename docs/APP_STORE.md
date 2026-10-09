@@ -184,3 +184,22 @@ App Privacy answers do not change: Apple Health data is processed only on the de
 ```
 WHAT HELPS ME (new in 1.2): Home > "What helps me?" suggests an in-app exercise based on the feeling and time the user selects. After an exercise, an optional "Did this help?" rating is stored on the device only; suggestions use these ratings once there are at least three for that exercise and feeling, and are worded as observations, not medical claims. BACKUP: Settings > "Back up data" saves a JSON file via the share sheet; "Restore from backup" reads a file chosen with the document picker. Backups never leave the user's control and are not uploaded to our server.
 ```
+
+## Version 1.4 – Soundscapes and Tea rituals (first public release includes everything above)
+
+**What's New in This Version**
+
+```
+• Soundscapes: 8 original sounds for calm, focus and sleep, with a sleep timer and offline playback
+• Tea rituals: turn a caffeine-free tea into a guided five-minute pause
+• Wellbeing Plus now unlocks all soundscapes and tea rituals (2 of each are free)
+• "Did this help?" now works after soundscapes and tea rituals too
+```
+
+**Add to the review notes**
+
+```
+SOUNDSCAPES (new in 1.4): Home > Soundscapes. Eight original audio tracks owned by the developer (no third-party music). Two are free; six require Wellbeing Plus. Audio streams from our server and is cached on the device for offline play; it continues with the screen locked (background audio), with an optional sleep timer.
+TEA RITUALS (new in 1.4): Home > Tea rituals. Eight common caffeine-free herbal teas presented as a guided mindfulness pause (brew timer and five reflective steps). Content is informational and conservative: no treatment or "clinically proven" claims, an honest evidence label on each tea, and specific cautions (allergies, pregnancy, medication). Herbs with known interaction risks for people taking mental-health medication (e.g. St John's wort, kava, valerian) are deliberately excluded. No products are sold or linked. Two teas are free; six require Wellbeing Plus.
+PLUS CONTENT: To review Plus content without purchasing, use the demo account below (Plus is granted in RevenueCat) or a sandbox purchase.
+```

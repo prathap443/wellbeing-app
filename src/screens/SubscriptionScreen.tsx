@@ -10,9 +10,11 @@ const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stde
 
 // Only real, delivered benefits: Apple rejects subscriptions that promise things the app doesn't do.
 const BENEFITS = [
+  ['headset-outline', 'All 8 soundscapes', 'Original sounds for calm, focus and sleep, with a sleep timer. 2 are free.'],
+  ['cafe-outline', 'All 8 tea rituals', 'Guided five-minute tea pauses. 2 are free.'],
   ['chatbubbles-outline', '30 AI coach questions a day', 'Free accounts get 5.'],
   ['sync-outline', 'Keep Plus on all your devices', 'Sign in with your Wellbeing account.'],
-  ['heart-outline', 'Support an independent wellbeing app', 'Every tool stays free for everyone.'],
+  ['heart-outline', 'Support an independent wellbeing app', 'Mood, check-ins, journal, breathing and crisis help always stay free.'],
 ];
 
 type Plan = { id: string; title: string; price: string; period: string; detail: string | null; pkg: PurchasesPackage | null };
