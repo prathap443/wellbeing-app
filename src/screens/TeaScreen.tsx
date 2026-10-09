@@ -20,7 +20,8 @@ export default function TeaScreen() {
   const [step, setStep] = useState(0);
   const session = useActivitySession('tea');
 
-  useEffect(() => { if (tea && !tea.free && !plus) navigation.replace('Subscription'); }, [tea?.id, plus]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Everyone can read a tea's information and cautions; only the guided ritual needs Plus.
+  const locked = !!tea && !tea.free && !plus;
   // Brew countdown, based on the clock so it stays right even if the screen sleeps.
   useEffect(() => {
     if (stage !== 'brewing' || !tea) return;
@@ -33,7 +34,7 @@ export default function TeaScreen() {
 
   if (!tea) return <View style={[styles.page, styles.center]}><Text style={styles.body}>This tea isn't available.</Text></View>;
 
-  const startBrew = () => { session.begin(); setStage('brewing'); };
+  const startBrew = () => { if (locked) { navigation.navigate('Subscription'); return; } session.begin(); setStage('brewing'); };
   const nextStep = () => { if (step < RITUAL_STEPS.length - 1) setStep(step + 1); else { session.finish(); setStage('done'); } };
   const again = () => { setStage('about'); setStep(0); };
 
@@ -52,7 +53,8 @@ export default function TeaScreen() {
       <Text style={styles.body}>{tea.brew.amount}. {tea.brew.water}. Steep for about {tea.brew.minutes} minutes.</Text>
       <Text style={styles.section}>Good to know</Text>
       {[...tea.safety, ...GENERAL_SAFETY].map((line) => <View key={line} style={styles.safetyRow}><Icon name="alert-circle-outline" size={16} color="#fcd34d" /><Text style={styles.safetyText}>{line}</Text></View>)}
-      <TouchableOpacity style={styles.primary} onPress={startBrew} accessibilityRole="button"><Icon name="timer-outline" size={20} color="#052e2b" /><Text style={styles.primaryText}>I've poured the water: start the timer</Text></TouchableOpacity>
+      {locked ? <TouchableOpacity style={styles.primary} onPress={startBrew} accessibilityRole="button"><Icon name="lock-closed" size={18} color="#052e2b" /><Text style={styles.primaryText}>Unlock the guided ritual with Plus</Text></TouchableOpacity>
+        : <TouchableOpacity style={styles.primary} onPress={startBrew} accessibilityRole="button"><Icon name="timer-outline" size={20} color="#052e2b" /><Text style={styles.primaryText}>I've poured the water: start the timer</Text></TouchableOpacity>}
     </> : null}
 
     {stage === 'brewing' ? <View style={styles.panel}>
@@ -70,7 +72,7 @@ export default function TeaScreen() {
 
     {stage === 'done' ? <View style={styles.panel}>
       <Icon name="checkmark-circle-outline" size={36} color="#5eead4" />
-      <Text style={styles.stepTitle}>A quiet five minutes</Text>
+      <Text style={styles.stepTitle}>A quiet moment</Text>
       <Text style={styles.body}>Finish your tea slowly, and carry a little of this pace into what comes next.</Text>
       {session.finishedId ? <FeedbackCard key={session.finishedId} sessionId={session.finishedId} /> : null}
       <TouchableOpacity style={styles.secondary} onPress={again} accessibilityRole="button"><Text style={styles.secondaryText}>Back to {tea.title}</Text></TouchableOpacity>

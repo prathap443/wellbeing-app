@@ -16,7 +16,7 @@ export default function TeaRitualsScreen() {
       <Image source={TEA_BANNER} style={[StyleSheet.absoluteFill, styles.fill]} resizeMode="cover" accessibilityIgnoresInvertColors />
       <View style={styles.bannerShade} />
       <Text style={styles.bannerTitle}>Tea rituals</Text>
-      <Text style={styles.bannerText}>A caffeine-free cup, turned into a five-minute pause.</Text>
+      <Text style={styles.bannerText}>A caffeine-free cup, turned into an unhurried pause.</Text>
     </View>
     <View style={styles.note}>
       <Icon name="information-circle-outline" size={18} color="#93c5fd" />
@@ -25,7 +25,7 @@ export default function TeaRitualsScreen() {
     <View style={styles.grid}>
       {TEAS.map((t) => {
         const locked = !t.free && !plus;
-        return <TouchableOpacity key={t.id} style={{ width: cardW }} onPress={() => navigation.navigate(locked ? 'Subscription' : 'Tea', locked ? undefined : { id: t.id })}
+        return <TouchableOpacity key={t.id} style={{ width: cardW }} onPress={() => navigation.navigate('Tea', { id: t.id })}
           accessibilityRole="button" accessibilityLabel={`${t.title}${locked ? ', Plus' : ''}`}>
           <View style={[styles.cover, { height: cardW * 4 / 3 }]}>
             <Image source={t.image} style={[StyleSheet.absoluteFill, styles.fill]} resizeMode="cover" />

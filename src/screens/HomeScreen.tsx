@@ -252,7 +252,7 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('TeaRituals')}>
             <Icon name="cafe-outline" size={22} color="#fdba74" />
             <Text style={styles.toolTitle}>Tea rituals</Text>
-            <Text style={styles.toolText}>A five-minute tea pause</Text>
+            <Text style={styles.toolText}>A calm, unhurried tea pause</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('Resources')}>
             <Icon name="compass-outline" size={22} color="#60a5fa" />

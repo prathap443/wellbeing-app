@@ -11,7 +11,7 @@ const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stde
 // Only real, delivered benefits: Apple rejects subscriptions that promise things the app doesn't do.
 const BENEFITS = [
   ['headset-outline', 'All 8 soundscapes', 'Original sounds for calm, focus and sleep, with a sleep timer. 2 are free.'],
-  ['cafe-outline', 'All 8 tea rituals', 'Guided five-minute tea pauses. 2 are free.'],
+  ['cafe-outline', 'All 8 tea rituals', 'Guided, unhurried tea pauses. 2 are free.'],
   ['chatbubbles-outline', '30 AI coach questions a day', 'Free accounts get 5.'],
   ['sync-outline', 'Keep Plus on all your devices', 'Sign in with your Wellbeing account.'],
   ['heart-outline', 'Support an independent wellbeing app', 'Mood, check-ins, journal, breathing and crisis help always stay free.'],
@@ -113,7 +113,7 @@ export default function SubscriptionScreen() {
   return <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
     <View style={styles.iconWrap}><Icon name="sparkles" size={28} color="#fef3c7" /></View>
     <Text style={styles.eyebrow}>WELLBEING PLUS</Text>
-    <Text style={styles.title}>More time with your coach</Text>
+    <Text style={styles.title}>Get more from Wellbeing</Text>
     <View style={styles.featureCard}>{BENEFITS.map(([icon, title, text]) => <View key={title} style={styles.featureRow}>
       <Icon name={icon as any} size={20} color="#6ee7b7" />
       <View style={styles.featureBody}><Text style={styles.featureTitle}>{title}</Text><Text style={styles.featureText}>{text}</Text></View>

@@ -9,8 +9,13 @@ import { finishActivity, newActivityId, startActivity, type Feeling, type Tool }
  * - finish(): finished (timer ended or "Finish" tapped). `finishedId` is then set, to show "Did this help?".
  * Duration counts active time only. Sending the app to the background pauses the clock and returning
  * resumes it, if it was running. Leaving the screen before finishing is saved as not completed.
+ *
+ * options.measure: for tools that keep playing in the background (soundscapes), the duration comes from
+ * this function (real playback time) instead of the clock, and backgrounding does not pause anything.
  */
-export function useActivitySession(tool: Tool, feeling?: Feeling) {
+export function useActivitySession(tool: Tool, feeling?: Feeling, options?: { measure?: () => number }) {
+  const measureRef = useRef(options?.measure);
+  measureRef.current = options?.measure;
   const id = useRef<string | null>(null);
   const done = useRef(false);
   const activeMs = useRef(0);
@@ -18,7 +23,8 @@ export function useActivitySession(tool: Tool, feeling?: Feeling) {
   const pausedByApp = useRef(false);
   const [finishedId, setFinishedId] = useState<string | null>(null);
 
-  const activeSeconds = () => (activeMs.current + (runningSince.current ? Date.now() - runningSince.current : 0)) / 1000;
+  const clockSeconds = () => (activeMs.current + (runningSince.current ? Date.now() - runningSince.current : 0)) / 1000;
+  const activeSeconds = () => (measureRef.current ? measureRef.current() : clockSeconds());
   const stopClock = () => { if (runningSince.current) { activeMs.current += Date.now() - runningSince.current; runningSince.current = null; } };
   const startClock = () => { if (!runningSince.current) runningSince.current = Date.now(); };
   const live = () => !!id.current && !done.current;
@@ -53,6 +59,7 @@ export function useActivitySession(tool: Tool, feeling?: Feeling) {
   // Background pauses the clock; foreground resumes it only if it was running when the app left.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
+      if (measureRef.current) return; // background playback counts: duration is measured, not clocked
       if (state === 'active') { if (pausedByApp.current) { pausedByApp.current = false; resume(); } }
       else if (live() && runningSince.current) { pausedByApp.current = true; stopClock(); }
     });

@@ -25,15 +25,24 @@ export default function SoundscapePlayerScreen() {
   const [listened, setListened] = useState(0);
   const [ended, setEnded] = useState<'sleep' | 'done' | null>(null);
   const looper = useRef<Looper | null>(null);
-  const healthTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const healthTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [errorText, setErrorText] = useState("Couldn't load this soundscape. Check your connection.");
-  const session = useActivitySession('soundscape');
+  // The chosen sleep timer lives here so every new player (first load, Retry) gets it.
+  const timerRef = useRef<number | null>(null);
+  // Listening time for the current session: real playback seconds, measured by the player.
+  const listenedRef = useRef(0);
+  const sessionBase = useRef(0);
+  const session = useActivitySession('soundscape', undefined, { measure: () => listenedRef.current });
+  const stopWatchdog = () => { if (healthTimer.current) { clearInterval(healthTimer.current); healthTimer.current = null; } };
 
   const load = useCallback(async (fresh = false) => {
     if (!track) return;
     setState('preparing');
+    setPlaying(false);
+    stopWatchdog();
     if (fresh) forgetCached(track.id); // Retry: download again rather than reuse a saved copy
     looper.current?.destroy(); looper.current = null;
+    session.abandon(); // a new player starts a new listening session
     let source = cachedUri(track.id);
     if (source) setOffline('saved');
     else {
@@ -46,8 +55,19 @@ export default function SoundscapePlayerScreen() {
     try {
       await Looper.prepareAudioSession();
       const l = new Looper(source);
-      l.onActiveSecond = () => { setListened((n) => n + 1); setRemaining(l.sleepRemainingMs()); };
-      l.onSleepEnd = () => { setPlaying(false); setTimer(null); setRemaining(null); setEnded('sleep'); session.finish(); };
+      l.setSleepTimer(timerRef.current); // keep the timer chosen while preparing / before Retry
+      setRemaining(l.sleepRemainingMs());
+      sessionBase.current = 0; listenedRef.current = 0; setListened(0);
+      l.onTick = () => {
+        listenedRef.current = Math.max(0, l.playedSeconds() - sessionBase.current);
+        setListened(Math.floor(listenedRef.current));
+        setRemaining(l.sleepRemainingMs());
+      };
+      l.onSleepEnd = () => {
+        stopWatchdog(); setPlaying(false);
+        timerRef.current = null; setTimer(null); setRemaining(null);
+        setEnded('sleep'); session.finish();
+      };
       looper.current = l;
       setState('ready');
     } catch {
@@ -59,30 +79,34 @@ export default function SoundscapePlayerScreen() {
   useEffect(() => {
     if (track && !canPlay(track, plus)) { navigation.replace('Subscription'); return; }
     load();
-    return () => { looper.current?.destroy(); looper.current = null; if (healthTimer.current) clearTimeout(healthTimer.current); };
+    return () => { stopWatchdog(); looper.current?.destroy(); looper.current = null; };
   }, [track?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!track) return <View style={[styles.page, styles.center]}><Text style={styles.subtitle}>This soundscape isn't available.</Text></View>;
 
   const toggle = () => {
-    const l = looper.current; if (!l) return;
-    if (playing) { l.pause(); session.pause(); setPlaying(false); }
-    else {
-      setEnded(null); session.begin(); l.play(); setPlaying(true);
-      // If nothing is actually playing after 8 seconds, say so (with Retry) instead of staying silent.
-      if (healthTimer.current) clearTimeout(healthTimer.current);
-      healthTimer.current = setTimeout(() => {
-        if (looper.current === l && l.playing && !l.isProgressing()) {
-          l.pause(); setPlaying(false);
-          setErrorText("This soundscape didn't start playing. Tap Retry to download it again.");
-          setState('error');
-        }
-      }, 8000);
-    }
+    const l = looper.current; if (!l || state !== 'ready') return;
+    if (playing) { stopWatchdog(); l.pause(); session.pause(); setPlaying(false); return; }
+    setEnded(null);
+    if (!session.active()) { sessionBase.current = l.playedSeconds(); listenedRef.current = 0; setListened(0); } // fresh session
+    session.begin(); l.play(); setPlaying(true);
+    // Watchdog: if the sound doesn't start within 8 s, or stops moving for 15 s while "playing",
+    // stop and say so (with Retry) instead of staying silent. Waiting time is never counted as listening.
+    const startedAt = Date.now();
+    stopWatchdog();
+    healthTimer.current = setInterval(() => {
+      if (looper.current !== l || !l.playing) { stopWatchdog(); return; }
+      const neverStarted = l.playedSeconds() <= sessionBase.current && Date.now() - startedAt >= 8000;
+      if (neverStarted || l.stalledFor(15000)) {
+        stopWatchdog(); l.pause(); session.pause(); setPlaying(false);
+        setErrorText(neverStarted ? "This soundscape didn't start playing. Tap Retry to download it again." : 'The sound stopped unexpectedly. Tap Retry to load it again.');
+        setState('error');
+      }
+    }, 2000);
   };
-  const chooseTimer = (m: number | null) => { setTimer(m); looper.current?.setSleepTimer(m); setRemaining(looper.current?.sleepRemainingMs() ?? null); };
+  const chooseTimer = (m: number | null) => { timerRef.current = m; setTimer(m); looper.current?.setSleepTimer(m); setRemaining(looper.current?.sleepRemainingMs() ?? (m ? m * 60_000 : null)); };
   const done = () => {
-    looper.current?.pause(); setPlaying(false);
+    stopWatchdog(); looper.current?.pause(); session.pause(); setPlaying(false);
     if (listened >= MIN_LISTEN_S) { session.finish(); setEnded('done'); } else navigation.goBack();
   };
 
@@ -108,7 +132,7 @@ export default function SoundscapePlayerScreen() {
           <Text style={[styles.timerText, timer === m && styles.timerTextOn]}>{m ? `${m} min` : 'Off'}</Text>
         </TouchableOpacity>)}
       </View>
-      {timer && remaining !== null ? <Text style={styles.countdown}>Fades out in {clock(remaining)}</Text> : <Text style={styles.countdown}>Plays until you stop it</Text>}
+      {timer && remaining !== null ? <Text style={styles.countdown}>{playing ? `Stops in ${clock(remaining)}, fading gently at the end` : `Stops after ${clock(remaining)} of playing`}</Text> : <Text style={styles.countdown}>Plays until you stop it</Text>}
 
       {ended ? <>
         <Text style={styles.endedText}>{ended === 'sleep' ? 'Your sleep timer finished.' : 'Nice pause.'}</Text>
