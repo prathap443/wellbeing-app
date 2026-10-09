@@ -29,18 +29,18 @@ Sign in with your Apple ID when EAS asks and let it create the certificates. The
 | Marketing URL | leave empty |
 | Copyright | 2026 Prathap Adicherla |
 
-## 3. Version 1.0 listing
+## 3. Version 1.4 listing
 
 **Promotional text** (170 characters max; can be changed any time without review)
 
 ```
-Check in with yourself, spot your patterns and get practical next steps from a supportive AI coach. Your journal and moods stay on your phone.
+A calm pause every day, original sleep and focus sounds, and guided tea rituals. Check in, spot your patterns and find what actually helps you.
 ```
 
 **Keywords** (100 characters max; words already in the name and subtitle are indexed, so they are not repeated)
 
 ```
-anxiety,stress,meditation,breathing,sleep,therapy,mindfulness,diary,selfcare,wellness,ai coach
+anxiety,stress,meditation,breathing,sleep sounds,therapy,mindfulness,tea,selfcare,wellness,ai coach
 ```
 
 **Description** (4000 characters max)
@@ -53,6 +53,12 @@ CHECK IN WITH YOURSELF
 • Daily check-in for sleep, energy and stress
 • See your streaks, mood trends and patterns over time
 
+SOUNDS, TEA AND A DAILY PAUSE
+• Today's pause: a 12-second calm video with a few kind words, new every day
+• 8 original soundscapes for calm, focus and sleep, with a sleep timer that fades gently and keeps playing when your screen is locked
+• Tea rituals: 8 caffeine-free teas turned into a guided, unhurried pause, with honest evidence notes and clear cautions
+• What helps me? Choose how you feel and how much time you have, and get one thing to try, based on what has helped you before
+
 AN AI COACH THAT GETS YOU
 • Answer a short quiz and the coach suggests questions that fit what you are dealing with
 • Practical, encouraging next steps based on your recent check-ins
@@ -61,6 +67,7 @@ AN AI COACH THAT GETS YOU
 
 TOOLS FOR CALM
 • Box breathing and 5-4-3-2-1 grounding
+• Bubble release, a calm 3-minute game
 • Guided meditations with gentle ambient sound
 • Anxiety support and a sleep reset routine
 • Reflective journal that helps you reframe difficult thoughts
