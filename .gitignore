@@ -43,3 +43,4 @@ yarn-error.*
 .local/
 .config/
 .upm/
+fix-*.mjs
