@@ -206,6 +206,7 @@ export default function JournalScreen() {
               .filter(([, v]) => !!(v && String(v).trim()))
               .map(([label, value]) => <View key={label as string} style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><Text style={styles.fieldValue} selectable>{value}</Text></View>)}
           </ScrollView>
+          {open?.nextStep?.trim() ? <TouchableOpacity style={styles.habitButton} accessibilityRole="button" onPress={() => { const step = open.nextStep!.trim().slice(0, 60); setOpen(null); navigation.navigate('Goals', { newHabit: step }); }}><Icon name="repeat-outline" size={18} color="#fde68a" /><Text style={styles.habitButtonText}>Make the next step a habit</Text></TouchableOpacity> : null}
           {open && brought === entryId(open) ? <View style={styles.broughtRow}><Icon name="checkmark-circle" size={18} color="#6ee7b7" /><Text style={styles.broughtText}>Added to your therapy plan</Text></View>
             : <TouchableOpacity style={styles.bringButton} accessibilityRole="button" onPress={() => {
               if (!open) return;
@@ -236,6 +237,7 @@ const styles = StyleSheet.create({
   field: { marginTop: 14 }, fieldLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' }, fieldValue: { color: '#f1f5f9', fontSize: 15, lineHeight: 22, marginTop: 6 },
   speakCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#24203f', borderColor: '#4c1d95', borderWidth: 1, borderRadius: 17, padding: 16, marginBottom: 14 }, speakIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#7c3aed', alignItems: 'center', justifyContent: 'center' }, speakTitle: { color: '#f8fafc', fontSize: 16, fontWeight: '700' }, speakText: { color: '#c4b5fd', fontSize: 12, lineHeight: 17, marginTop: 3 },
   ownWords: { backgroundColor: '#24203f', borderRadius: 14, padding: 14, marginTop: 14 }, ownWordsLabel: { color: '#c4b5fd', fontSize: 11, fontWeight: '800', letterSpacing: 1 }, ownWordsIntro: { color: '#cbd5e1', marginTop: 8 }, ownWordsText: { color: '#f8fafc', fontSize: 15, lineHeight: 22, fontStyle: 'italic', marginTop: 6 }, ownWordsUse: { color: '#c4b5fd', fontWeight: '700', marginTop: 10 },
+  habitButton: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#78350f', borderRadius: 22, paddingVertical: 12, marginTop: 12 }, habitButtonText: { color: '#fde68a', fontWeight: '700' },
   bringButton: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#1e3a8a', borderRadius: 22, paddingVertical: 12, marginTop: 12 }, bringText: { color: '#93c5fd', fontWeight: '700' }, broughtRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', paddingVertical: 12, marginTop: 12 }, broughtText: { color: '#a7f3d0', fontWeight: '700' },
   deleteButton: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#7f1d1d', borderRadius: 22, paddingVertical: 12, marginTop: 12 }, deleteText: { color: '#fca5a5', fontWeight: '700' },
 });

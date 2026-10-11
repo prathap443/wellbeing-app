@@ -79,7 +79,9 @@ export async function pickBackupFile(): Promise<string | null> {
 
 // ---------- Validation: only accept records shaped the way each screen saves them ----------
 const MOODS = ['great', 'good', 'okay', 'bad', 'very_bad'];
-const HABITS = ['sleep', 'water', 'movement', 'meditation', 'connection'];
+// Built-in habit ids (v1.5 added outside, reflect, checkin); custom habits use ids like "c-…".
+const HABITS = ['sleep', 'water', 'movement', 'meditation', 'connection', 'outside', 'reflect', 'checkin'];
+const habitId = (x: unknown) => typeof x === 'string' && (HABITS.includes(x) || /^c-[a-z0-9-]{4,40}$/.test(x));
 const MEDITATIONS = ['arrive', 'release', 'sleep', 'kindness'];
 const str = (v: unknown, max = 5000) => typeof v === 'string' && v.length <= max;
 const nonEmpty = (v: unknown, max = 5000) => str(v, max) && (v as string).trim().length > 0;
@@ -121,11 +123,14 @@ const RULES: Record<string, Rule> = {
     const out: Record<string, string[]> = {};
     let skipped = 0;
     for (const [day, ids] of Object.entries(v)) {
-      if (nonEmpty(day, 40) && strArr(ids, HABITS)) out[day] = ids as string[]; else skipped++;
+      if (nonEmpty(day, 40) && Array.isArray(ids) && ids.every(habitId)) out[day] = ids as string[]; else skipped++;
     }
     return { value: out, skipped };
   },
   weekly_habit_goal: whole((v) => int(v, 1, 7)),
+  // Chosen habits and your own habits (v1.5). Cleaned again when the Habits screen reads it.
+  habit_config: whole((v) => isPlainObject(v) && Array.isArray(v.active) && v.active.length <= 5 && v.active.every(habitId)
+    && Array.isArray(v.custom) && v.custom.length <= 50 && (v.custom as unknown[]).every((c) => isPlainObject(c) && habitId(c.id) && nonEmpty(c.title, 200) && optStr(c.tiny, 200))),
   meditation_completed: whole((v) => int(v, 0, 1_000_000)),
   sleep_reset_habits: whole((v) => isPlainObject(v) && nonEmpty(v.night, 20) && strArr(v.done)),
   // Generous limits (the screen allows 10,000 / 500), so older, longer notes still restore.

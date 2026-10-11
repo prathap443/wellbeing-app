@@ -194,6 +194,7 @@ export default function VoiceJournalScreen() {
         <Text style={styles.stepText}>{text.nextStep.trim()}</Text>
         <Text style={styles.stepHint}>It will wait for you on Home for the next few days, until you mark it done.</Text>
         <TouchableOpacity style={styles.plannerButton} onPress={() => navigation.push('Planner', { prefillTask: text.nextStep.trim().slice(0, 300) })} accessibilityRole="button"><Icon name="calendar-outline" size={16} color="#052e2b" /><Text style={styles.plannerText}>Add to planner</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.habitButton} onPress={() => navigation.push('Goals', { newHabit: text.nextStep.trim().slice(0, 60) })} accessibilityRole="button"><Icon name="repeat-outline" size={16} color="#fde68a" /><Text style={styles.habitText}>Make it a habit</Text></TouchableOpacity>
       </View> : null}
       {addingMore ? <>
         <Text style={styles.title}>Anything else?</Text>
@@ -263,6 +264,7 @@ const styles = StyleSheet.create({
   stepLabel: { color: '#6ee7b7', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   stepHint: { color: '#94a3b8', fontSize: 12, lineHeight: 17, marginTop: 6 },
   stepText: { color: '#f8fafc', fontSize: 16, lineHeight: 23, marginTop: 8 },
+  habitButton: { flexDirection: 'row', gap: 6, alignSelf: 'flex-start', alignItems: 'center', borderColor: '#f59e0b', borderWidth: 1, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, marginTop: 8 }, habitText: { color: '#fde68a', fontWeight: '700' },
   plannerButton: { flexDirection: 'row', gap: 6, alignSelf: 'flex-start', alignItems: 'center', backgroundColor: '#6ee7b7', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 9, marginTop: 12 },
   plannerText: { color: '#052e2b', fontWeight: '800' },
   backdrop: { flex: 1, backgroundColor: 'rgba(2,6,23,0.8)', justifyContent: 'center', padding: 22 },

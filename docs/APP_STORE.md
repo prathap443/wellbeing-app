@@ -224,6 +224,7 @@ PLUS CONTENT: To review Plus content without purchasing, use the demo account be
 • Your next step waits on Home until it's done, and you can make it smaller if it feels too big
 • Your own words: when a feeling comes back, see the kinder thing you told yourself last time
 • Bring a reflection to your next therapy session with one tap
+• Habits, rebuilt: choose your own (or write one), each with a tiny version that counts on hard days. Some tick themselves when you breathe, meditate, journal or walk
 ```
 
 **Add to the review notes**
