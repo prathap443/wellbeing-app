@@ -12,6 +12,10 @@
       "supportsTablet": false,
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Wellbeing does not access your photo library. This permission is never requested.",
+        "NSPhotoLibraryAddUsageDescription": "Wellbeing does not save anything to your photo library. This permission is never requested."
       }
     },
     "android": {
