@@ -21,6 +21,8 @@ import { useSession } from '../lib/session';
 import { formatSleep, formatSteps } from '../lib/health';
 import { useHealth } from '../lib/useHealth';
 import WhatHelpsCard from '../components/WhatHelpsCard';
+import NextStepCard from '../components/NextStepCard';
+import { entryId, loadJournal, openNextStep, type JournalEntry } from '../lib/journal';
 import { todaysPause } from '../lib/pauses';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -96,6 +98,12 @@ export default function HomeScreen() {
     // Reload whenever the screen regains focus so changes elsewhere (e.g. clearing data) show up.
     return navigation.addListener('focus', loadEntries);
   }, [navigation]);
+  // A next step chosen in Journal stays visible here for up to 3 days, until it's done or put aside.
+  const [stepEntry, setStepEntry] = useState<JournalEntry | null>(null);
+  useEffect(() => navigation.addListener('focus', async () => {
+    const result = await loadJournal();
+    setStepEntry(result.ok ? openNextStep(result.entries) : null);
+  }), [navigation]);
 
   const loadEntries = async () => {
     try {
@@ -208,6 +216,8 @@ export default function HomeScreen() {
           <Icon name="chevron-forward-outline" size={20} color="#99f6e4" />
         </TouchableOpacity>
       ) : null}
+
+      {stepEntry ? <NextStepCard key={entryId(stepEntry)} entry={stepEntry} variant="home" onChanged={() => undefined} /> : null}
 
       <WhatHelpsCard />
 

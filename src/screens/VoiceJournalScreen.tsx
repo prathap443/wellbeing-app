@@ -2,7 +2,7 @@ import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInpu
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { JOURNAL_FEELINGS, JOURNAL_FIELD_MAX, TOOL_FEELING, loadJournal, newEntryId, saveJournal, type JournalEntry } from '../lib/journal';
+import { JOURNAL_FEELINGS, JOURNAL_FIELD_MAX, TOOL_FEELING, loadJournal, newEntryId, ownWords, saveJournal, type JournalEntry } from '../lib/journal';
 import { MAX_LISTEN_MS, needsSupport } from '../lib/voice';
 import { useVoiceCapture } from '../lib/useVoiceCapture';
 
@@ -43,6 +43,10 @@ export default function VoiceJournalScreen() {
   const [support, setSupport] = useState(false);
   const supportShown = useRef(false);
   const savedRef = useRef(false);
+  // Earlier reflections, read once, only to show the person's own kinder words back to them.
+  const [past, setPast] = useState<JournalEntry[]>([]);
+  useEffect(() => { loadJournal().then((r) => { if (r.ok) setPast(r.entries); }).catch(() => undefined); }, []);
+  const words = ownWords(past, feelings);
   savedRef.current = !!savedId;
 
   const set = (field: Field, value: string) => setText((t) => ({ ...t, [field]: value.slice(0, JOURNAL_FIELD_MAX) }));
@@ -129,6 +133,11 @@ export default function VoiceJournalScreen() {
     {step === 'choose' ? <>
       <Text style={styles.title}>What would help right now?</Text>
       <View style={styles.quote}><Text style={styles.quoteText} numberOfLines={6}>“{text.situation.trim()}”</Text></View>
+      {words ? <View style={styles.words}>
+        <Text style={styles.wordsLabel}>YOUR OWN WORDS</Text>
+        <Text style={styles.wordsIntro}>Last time you felt {words.feeling.toLowerCase()}, you told yourself:</Text>
+        <Text style={styles.wordsText}>“{words.text}”</Text>
+      </View> : null}
       {[
         { icon: 'chatbubbles-outline', title: 'Talk it through', text: 'A few gentle questions, one at a time. Speak or type.', onPress: () => { setQ(0); next('talk'); } },
         { icon: 'leaf-outline', title: 'Take a short pause', text: 'Saves your words, then a breathing or grounding exercise.', onPress: toPause },
@@ -146,6 +155,11 @@ export default function VoiceJournalScreen() {
       <Text style={styles.progress}>Question {q + 1} of {QUESTIONS.length}</Text>
       <Text style={styles.title}>{QUESTIONS[q].prompt(feelings)}</Text>
       <Text style={styles.subtitle}>{QUESTIONS[q].helper}</Text>
+      {QUESTIONS[q].field === 'perspective' && words && !text.perspective.trim() ? <View style={styles.words}>
+        <Text style={styles.wordsIntro}>Last time you felt {words.feeling.toLowerCase()}, you told yourself:</Text>
+        <Text style={styles.wordsText}>“{words.text}”</Text>
+        <TouchableOpacity onPress={() => set('perspective', words.text)} accessibilityRole="button"><Text style={styles.wordsUse}>Use these words again</Text></TouchableOpacity>
+      </View> : null}
       {micRow(QUESTIONS[q].field, 'Speak or type, or skip.')}
       <View style={styles.row}>
         <TouchableOpacity style={styles.secondary} disabled={voice.listening || saving} onPress={() => { const field = QUESTIONS[q].field; set(field, ''); if (q < QUESTIONS.length - 1) { voice.stop(); setQ(q + 1); } else finishTalk({ [field]: '' }); }}><Text style={styles.secondaryText}>Skip</Text></TouchableOpacity>
@@ -178,6 +192,7 @@ export default function VoiceJournalScreen() {
       {text.nextStep.trim() ? <View style={styles.stepCard}>
         <Text style={styles.stepLabel}>YOUR NEXT STEP</Text>
         <Text style={styles.stepText}>{text.nextStep.trim()}</Text>
+        <Text style={styles.stepHint}>It will wait for you on Home for the next few days, until you mark it done.</Text>
         <TouchableOpacity style={styles.plannerButton} onPress={() => navigation.push('Planner', { prefillTask: text.nextStep.trim().slice(0, 300) })} accessibilityRole="button"><Icon name="calendar-outline" size={16} color="#052e2b" /><Text style={styles.plannerText}>Add to planner</Text></TouchableOpacity>
       </View> : null}
       {addingMore ? <>
@@ -235,6 +250,10 @@ const styles = StyleSheet.create({
   chipText: { color: '#94a3b8', fontWeight: '700' }, chipTextOn: { color: '#fff' },
   quote: { backgroundColor: '#1e293b', borderRadius: 14, padding: 14, marginTop: 14, marginBottom: 6 },
   quoteText: { color: '#e2e8f0', fontStyle: 'italic', lineHeight: 21 },
+  words: { backgroundColor: '#24203f', borderRadius: 14, padding: 14, marginTop: 12 },
+  wordsLabel: { color: '#c4b5fd', fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 6 },
+  wordsIntro: { color: '#cbd5e1' }, wordsText: { color: '#f8fafc', fontSize: 15, lineHeight: 22, fontStyle: 'italic', marginTop: 6 },
+  wordsUse: { color: '#c4b5fd', fontWeight: '700', marginTop: 10 },
   option: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#1e293b', borderRadius: 16, padding: 16, marginTop: 10 },
   optionIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center' },
   optionTitle: { color: '#f8fafc', fontSize: 16, fontWeight: '700' }, optionText: { color: '#94a3b8', fontSize: 13, lineHeight: 18, marginTop: 3 },
@@ -242,6 +261,7 @@ const styles = StyleSheet.create({
   savedText: { color: '#a7f3d0', fontWeight: '600' },
   stepCard: { backgroundColor: '#1e293b', borderRadius: 16, padding: 16, marginBottom: 16 },
   stepLabel: { color: '#6ee7b7', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  stepHint: { color: '#94a3b8', fontSize: 12, lineHeight: 17, marginTop: 6 },
   stepText: { color: '#f8fafc', fontSize: 16, lineHeight: 23, marginTop: 8 },
   plannerButton: { flexDirection: 'row', gap: 6, alignSelf: 'flex-start', alignItems: 'center', backgroundColor: '#6ee7b7', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 9, marginTop: 12 },
   plannerText: { color: '#052e2b', fontWeight: '800' },

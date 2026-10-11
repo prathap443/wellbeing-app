@@ -2,6 +2,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOp
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons as Icon } from '@expo/vector-icons';
+import { useRoute } from '@react-navigation/native';
 
 type Action = { id: string; text: string; done: boolean };
 type TherapyPlan = { topic: string; questions: string; actions: Action[]; draft?: string };
@@ -11,6 +12,8 @@ export const NOTE_MAX = 10000;
 export const ACTION_MAX = 500;
 
 export default function TherapyCompanionScreen() {
+  const bring = ((useRoute<any>().params ?? {}) as { bring?: { id: string; text: string } }).bring;
+  const brought = useRef<string | null>(null);
   const [topic, setTopic] = useState('');
   const [questions, setQuestions] = useState('');
   const [actions, setActions] = useState<TherapyPlan['actions']>([]);
@@ -73,6 +76,19 @@ export default function TherapyCompanionScreen() {
     if (!loaded) return;
     save({ topic, questions, actions, draft: actionText });
   }, [loaded, topic, questions, actions, actionText, save]);
+  // From Journal, "Bring to my next session": added to the topic once the saved notes have loaded (so nothing
+  // is overwritten), at most once per reflection. Autosave then keeps it.
+  const [justAdded, setJustAdded] = useState(false);
+  useEffect(() => {
+    if (!loaded || !bring || brought.current === bring.id) return;
+    brought.current = bring.id;
+    setTopic((t) => {
+      if (t.includes(bring.text)) return t;
+      const next = t.trim() ? `${t.trimEnd()}\n\n${bring.text}` : bring.text;
+      return next.slice(0, limits.topic);
+    });
+    setJustAdded(true);
+  }, [loaded, bring, limits.topic]);
   const retry = () => save({ topic, questions, actions, draft: actionText });
 
   const addAction = () => {
@@ -118,6 +134,7 @@ export default function TherapyCompanionScreen() {
     <View style={styles.header}><Icon name="people-outline" size={31} color="#60a5fa" /><Text style={styles.title}>Therapy companion</Text><Text style={styles.subtitle}>Prepare for sessions and keep small, agreed actions visible between them.</Text></View>
     <View style={styles.boundary}><Icon name="shield-checkmark-outline" size={20} color="#93c5fd" /><Text style={styles.boundaryText}>This is a private planning tool. It does not provide therapy, diagnosis, crisis support, or share anything with a therapist.</Text></View>
     <Text style={styles.sectionTitle}>Prepare for your next session</Text>
+    {justAdded ? <View style={styles.addedRow}><Icon name="checkmark-circle" size={16} color="#6ee7b7" /><Text style={styles.addedText}>Your reflection was added below. Edit it however you like.</Text></View> : null}
     <View style={styles.card}><Text style={styles.label}>What would you like to talk about?</Text><TextInput style={styles.largeInput} value={topic} onChangeText={setTopic} maxLength={limits.topic} placeholder="A situation, pattern, or goal you want to explore" placeholderTextColor="#64748b" multiline textAlignVertical="top" /><Text style={styles.label}>Questions for your therapist</Text><TextInput style={styles.smallInput} value={questions} onChangeText={setQuestions} maxLength={limits.questions} placeholder="For example: What could I try when this feeling appears?" placeholderTextColor="#64748b" multiline textAlignVertical="top" /></View>
     <Text style={styles.sectionTitle}>Between-session actions</Text><Text style={styles.sectionHint}>Keep these small and agreed with your therapist.</Text>
     <View style={styles.actionInputRow}><TextInput style={styles.actionInput} value={actionText} onChangeText={setActionText} maxLength={ACTION_MAX} placeholder="Add one small action" placeholderTextColor="#64748b" onSubmitEditing={addAction} /><TouchableOpacity style={styles.addButton} onPress={addAction}><Icon name="add-outline" size={22} color="#fff" /></TouchableOpacity></View>
@@ -148,6 +165,7 @@ export default function TherapyCompanionScreen() {
 }
 
 const styles = StyleSheet.create({
+  addedRow: { flexDirection: 'row', gap: 8, alignItems: 'center', backgroundColor: '#12372f', borderRadius: 12, padding: 11, marginBottom: 10 }, addedText: { color: '#a7f3d0', fontSize: 13, flex: 1 },
   container: { flexGrow: 1, backgroundColor: '#0f172a', padding: 20, paddingBottom: 40 }, header: { marginBottom: 22 }, title: { color: '#f8fafc', fontSize: 26, fontWeight: '700', marginTop: 12 }, subtitle: { color: '#94a3b8', lineHeight: 21, marginTop: 7 },
   boundary: { flexDirection: 'row', gap: 10, backgroundColor: '#172554', borderRadius: 14, borderWidth: 1, borderColor: '#1d4ed8', padding: 15 }, boundaryText: { color: '#bfdbfe', fontSize: 12, lineHeight: 18, flex: 1 }, sectionTitle: { color: '#f8fafc', fontSize: 17, fontWeight: '700', marginTop: 25, marginBottom: 8 }, sectionHint: { color: '#94a3b8', fontSize: 12, marginBottom: 12 },
   card: { backgroundColor: '#1e293b', borderRadius: 16, padding: 16 }, label: { color: '#cbd5e1', fontSize: 13, fontWeight: '700', marginBottom: 8 }, largeInput: { minHeight: 100, color: '#f8fafc', borderColor: '#334155', borderWidth: 1, borderRadius: 12, padding: 13, marginBottom: 17 }, smallInput: { minHeight: 78, color: '#f8fafc', borderColor: '#334155', borderWidth: 1, borderRadius: 12, padding: 13 },

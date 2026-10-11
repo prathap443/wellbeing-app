@@ -221,7 +221,9 @@ PLUS CONTENT: To review Plus content without purchasing, use the demo account be
 • Say it out loud: speak a journal entry and your iPhone turns it into text you can edit. The audio isn't kept and nothing leaves your phone
 • Then choose what helps: talk it through with a few gentle questions, take a short pause, or just save
 • Choose one manageable next step and add it to your planner if you like
-• Journal now asks how your last planned step went
+• Your next step waits on Home until it's done, and you can make it smaller if it feels too big
+• Your own words: when a feeling comes back, see the kinder thing you told yourself last time
+• Bring a reflection to your next therapy session with one tap
 ```
 
 **Add to the review notes**

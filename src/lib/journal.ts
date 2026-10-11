@@ -21,6 +21,10 @@ export type JournalEntry = {
   /** Answer to "Did it happen?" for the next step, asked once on a later visit. */
   nextStepStatus?: 'done' | 'not_yet' | 'dismissed';
   nextStepCheckedAt?: string;
+  /** Set when the step was made smaller: the step's own clock restarts from here. */
+  nextStepUpdatedAt?: string;
+  /** "Not today" on Home: hidden for this local day (YYYY-MM-DD). */
+  nextStepSnoozedOn?: string;
 };
 /** Feeling chips shared by the written and spoken journal. */
 export const JOURNAL_FEELINGS = ['Calm', 'Hopeful', 'Stressed', 'Low', 'Anxious', 'Frustrated'];
@@ -70,20 +74,66 @@ export const sameDraft = (a: JournalDraft, b: JournalDraft) =>
 export const draftAfterSave = (current: JournalDraft, saved: JournalDraft): { draft: JournalDraft; newerKept: boolean } =>
   sameDraft(current, saved) ? { draft: EMPTY_DRAFT, newerKept: false } : { draft: current, newerKept: true };
 
-// ---------- Next-step check-in ----------
-/** Ask about a planned step from 4 hours to 14 days ago: soon enough to matter, late enough to have happened. */
-const CHECK_MIN_MS = 4 * 3600_000;
-const CHECK_MAX_MS = 14 * 86_400_000;
+// ---------- Next steps: what happens to a reflection after it is saved ----------
+const DAY = 86_400_000;
+/** When the step was set (or last made smaller). */
+const stepTime = (e: JournalEntry) => Date.parse(e.nextStepUpdatedAt ?? e.createdAt ?? '');
+const hasStep = (e: JournalEntry) => !!e.nextStep?.trim() && !Number.isNaN(stepTime(e));
+export const localDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-/** The most recent reflection whose next step hasn't been asked about yet, or null. Only the newest step is ever asked. */
+/** The newest step overall. Only this one is ever surfaced, so older steps never pile up into a to-do list. */
+const newestStep = (entries: JournalEntry[]) =>
+  entries.filter(hasStep).reduce<JournalEntry | null>((best, e) => (!best || stepTime(e) > stepTime(best) ? e : best), null);
+
+/** Journal asks "Did it happen?" from 4 hours to 14 days after the step was set, once. */
 export function pendingNextStep(entries: JournalEntry[], now = Date.now()): JournalEntry | null {
-  const latest = entries.find((e) => e.nextStep?.trim() && e.createdAt && !Number.isNaN(Date.parse(e.createdAt)));
-  if (!latest || latest.nextStepStatus) return null;
-  const age = now - Date.parse(latest.createdAt!);
-  return age >= CHECK_MIN_MS && age <= CHECK_MAX_MS ? latest : null;
+  const e = newestStep(entries);
+  if (!e || e.nextStepStatus) return null;
+  const age = now - stepTime(e);
+  return age >= 4 * 3600_000 && age <= 14 * DAY ? e : null;
 }
 
-/** Returns a new list with the answer recorded on that one reflection (nothing else changes). */
-export function withNextStepAnswer(entries: JournalEntry[], id: string, status: 'done' | 'not_yet' | 'dismissed', now = new Date()): JournalEntry[] {
-  return entries.map((e) => (entryId(e) === id ? { ...e, nextStepStatus: status, nextStepCheckedAt: now.toISOString() } : e));
+/** Home shows the step for 3 days while it is still open, unless hidden for today. */
+export function openNextStep(entries: JournalEntry[], now = new Date()): JournalEntry | null {
+  const e = newestStep(entries);
+  if (!e || (e.nextStepStatus && e.nextStepStatus !== 'not_yet')) return null;
+  if (e.nextStepSnoozedOn === localDay(now)) return null;
+  const age = now.getTime() - stepTime(e);
+  return age >= 0 && age <= 3 * DAY ? e : null;
+}
+
+export type StepAnswer = 'done' | 'not_yet' | 'dismissed' | 'snooze' | { smaller: string };
+/** Returns a new list with the answer applied to that one reflection (nothing else changes). */
+export function withNextStepAnswer(entries: JournalEntry[], id: string, answer: StepAnswer, now = new Date()): JournalEntry[] {
+  return entries.map((e) => {
+    if (entryId(e) !== id) return e;
+    if (answer === 'snooze') return { ...e, nextStepSnoozedOn: localDay(now) };
+    if (typeof answer === 'object') {
+      const { nextStepStatus: _s, nextStepCheckedAt: _c, nextStepSnoozedOn: _z, ...rest } = e;
+      return { ...rest, nextStep: answer.smaller.trim(), nextStepUpdatedAt: now.toISOString() };
+    }
+    return { ...e, nextStepStatus: answer, nextStepCheckedAt: now.toISOString() };
+  });
+}
+
+/** Reads the latest reflections, applies the answer and saves. Throws (changing nothing) if they can't be read. */
+export async function answerNextStep(id: string, answer: StepAnswer): Promise<JournalEntry[]> {
+  const result = await loadJournal();
+  if (!result.ok) throw new Error('journal_unreadable');
+  const next = withNextStepAnswer(result.entries, id, answer);
+  await saveJournal(next);
+  return next;
+}
+
+// ---------- "Your own words" ----------
+/** The most recent kinder perspective written when feeling one of these, to show back when the feeling returns. */
+export function ownWords(entries: JournalEntry[], feelings: string[]): { feeling: string; text: string; date: string } | null {
+  if (!feelings.length) return null;
+  const newest = [...entries].sort((a, b) => (Date.parse(b.createdAt ?? '') || 0) - (Date.parse(a.createdAt ?? '') || 0));
+  for (const e of newest) {
+    const text = e.perspective?.trim();
+    const feeling = e.feelings?.find((f) => feelings.includes(f));
+    if (text && feeling) return { feeling, text, date: e.date };
+  }
+  return null;
 }

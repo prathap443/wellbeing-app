@@ -3,7 +3,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { EMPTY_DRAFT, JOURNAL_FEELINGS, pendingNextStep, withNextStepAnswer, JOURNAL_DRAFT_KEY, JOURNAL_DRAFT_UNREADABLE_KEY, JOURNAL_FIELD_MAX, draftAfterSave, entryId, entryTitle, loadJournal, newEntryId, saveJournal, type JournalDraft, type JournalEntry } from '../lib/journal';
+import NextStepCard from '../components/NextStepCard';
+import { EMPTY_DRAFT, JOURNAL_FEELINGS, ownWords, pendingNextStep, JOURNAL_DRAFT_KEY, JOURNAL_DRAFT_UNREADABLE_KEY, JOURNAL_FIELD_MAX, draftAfterSave, entryId, entryTitle, loadJournal, newEntryId, saveJournal, type JournalDraft, type JournalEntry } from '../lib/journal';
 
 const PROMPTS = [
   'What happened, without judging it?',
@@ -17,7 +18,9 @@ const PAGE = 20;
 export default function JournalScreen() {
   const params = (useRoute<any>().params ?? {}) as { prefill?: string; openId?: string };
   const navigation = useNavigation<any>();
-  const [checkIn, setCheckIn] = useState<{ id: string; step: string; answered?: 'done' | 'not_yet' } | null>(null);
+  // The step to ask about. Chosen when the screen opens and kept while it's open, so the confirmation stays visible.
+  const [stepEntry, setStepEntry] = useState<JournalEntry | null>(null);
+  const [brought, setBrought] = useState<string | null>(null);
   const [draft, setDraft] = useState<JournalDraft>(EMPTY_DRAFT);
   const draftRef = useRef(draft);
   draftRef.current = draft; // always the latest text, including anything typed during a save
@@ -51,23 +54,8 @@ export default function JournalScreen() {
   // Spoken reflections are saved on their own screen: refresh the list when coming back (quietly, no spinner).
   useEffect(() => navigation.addListener('focus', async () => {
     const result = await loadJournal();
-    if (result.ok) { setEntries(result.entries); setLoad('ready'); }
+    if (result.ok) { setEntries(result.entries); setLoad('ready'); setStepEntry(pendingNextStep(result.entries)); }
   }), [navigation]);
-  // "Last time you planned…": asked once per step, only after the reflections have loaded.
-  useEffect(() => {
-    if (load !== 'ready' || checkIn?.answered) return;
-    const p = pendingNextStep(entries);
-    setCheckIn(p ? { id: entryId(p), step: p.nextStep!.trim() } : null);
-  }, [entries, load]); // eslint-disable-line react-hooks/exhaustive-deps
-  const answerCheckIn = async (status: 'done' | 'not_yet' | 'dismissed') => {
-    if (!checkIn || load !== 'ready') return;
-    const next = withNextStepAnswer(entries, checkIn.id, status);
-    try {
-      await saveJournal(next);
-      setEntries(next);
-      setCheckIn(status === 'dismissed' ? null : { ...checkIn, answered: status });
-    } catch { Alert.alert('Not saved', 'Your answer could not be saved. Please try again.'); }
-  };
   useEffect(() => { if (params.openId && load === 'ready') { const f = entries.find((e) => entryId(e) === params.openId); if (f) setOpen(f); } }, [params.openId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Unfinished writing is autosaved, so leaving the screen never loses it.
@@ -158,15 +146,7 @@ export default function JournalScreen() {
 
   return <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
     <View style={styles.header}><Icon name="book-outline" size={30} color="#c4b5fd" /><Text style={styles.title}>Reflect with clarity</Text><Text style={styles.subtitle}>Name what is happening, create space around it, and choose one gentle next step.</Text></View>
-    {checkIn ? <View style={styles.checkIn}>
-      <View style={styles.promptTop}><Text style={styles.checkInLabel}>LAST TIME YOU PLANNED</Text>{!checkIn.answered ? <TouchableOpacity onPress={() => answerCheckIn('dismissed')} accessibilityLabel="Don't ask about this step"><Icon name="close" size={18} color="#64748b" /></TouchableOpacity> : null}</View>
-      <Text style={styles.checkInStep}>{checkIn.step}</Text>
-      {checkIn.answered ? <Text style={styles.checkInThanks}>{checkIn.answered === 'done' ? 'Well done for following through.' : "That's okay. It's still here if you want it."}</Text>
-        : <><Text style={styles.checkInQ}>Did it happen?</Text><View style={styles.checkInRow}>
-          <TouchableOpacity style={styles.checkInYes} onPress={() => answerCheckIn('done')} accessibilityRole="button"><Text style={styles.checkInYesText}>Yes, I did</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.checkInNo} onPress={() => answerCheckIn('not_yet')} accessibilityRole="button"><Text style={styles.checkInNoText}>Not yet</Text></TouchableOpacity>
-        </View></>}
-    </View> : null}
+    {stepEntry ? <NextStepCard key={entryId(stepEntry)} entry={stepEntry} variant="journal" onChanged={setEntries} /> : null}
     <TouchableOpacity style={styles.speakCard} onPress={() => navigation.navigate('VoiceJournal')} accessibilityRole="button" accessibilityLabel="Speak instead of typing">
       <View style={styles.speakIcon}><Icon name="mic" size={22} color="#fff" /></View>
       <View style={{ flex: 1 }}><Text style={styles.speakTitle}>Say it out loud</Text><Text style={styles.speakText}>Speak what's on your mind, then choose one helpful next step. Stays on your phone.</Text></View>
@@ -175,6 +155,15 @@ export default function JournalScreen() {
     <View style={styles.promptCard}><View style={styles.promptTop}><Text style={styles.promptLabel}>GUIDED REFLECTION</Text><TouchableOpacity onPress={() => setPromptIndex((promptIndex + 1) % PROMPTS.length)} accessibilityLabel="Another prompt"><Icon name="refresh-outline" size={19} color="#c4b5fd" /></TouchableOpacity></View><Text style={styles.prompt}>{PROMPTS[promptIndex]}</Text></View>
     <Text style={styles.sectionTitle}>1. What happened?</Text><TextInput style={styles.shortInput} value={draft.situation} onChangeText={(v) => update({ situation: v })} editable={draftReady} maxLength={JOURNAL_FIELD_MAX} placeholder="Describe the situation or moment" placeholderTextColor="#64748b" multiline />
     <Text style={styles.sectionTitle}>2. What are you feeling?</Text><View style={styles.feelings}>{FEELINGS.map((feeling) => <TouchableOpacity key={feeling} onPress={() => toggleFeeling(feeling)} style={[styles.feelingChip, draft.feelings.includes(feeling) && styles.feelingChipSelected]}><Text style={[styles.feelingText, draft.feelings.includes(feeling) && styles.feelingTextSelected]}>{feeling}</Text></TouchableOpacity>)}</View>
+    {(() => {
+      const words = draft.perspective.trim() ? null : ownWords(entries, draft.feelings);
+      return words ? <View style={styles.ownWords}>
+        <Text style={styles.ownWordsLabel}>YOUR OWN WORDS</Text>
+        <Text style={styles.ownWordsIntro}>Last time you felt {words.feeling.toLowerCase()}, you told yourself:</Text>
+        <Text style={styles.ownWordsText}>“{words.text}”</Text>
+        <TouchableOpacity onPress={() => update({ perspective: words.text })} accessibilityRole="button"><Text style={styles.ownWordsUse}>Use these words again</Text></TouchableOpacity>
+      </View> : null;
+    })()}
     <Text style={styles.sectionTitle}>3. What is your mind saying?</Text><TextInput style={styles.shortInput} value={draft.thought} onChangeText={(v) => update({ thought: v })} editable={draftReady} maxLength={JOURNAL_FIELD_MAX} placeholder="For example: 'I am going to mess this up'" placeholderTextColor="#64748b" multiline />
     <View style={styles.reframeCard}><View style={styles.reframeHeading}><Icon name="heart-outline" size={20} color="#f0abfc" /><Text style={styles.reframeTitle}>A more balanced perspective</Text></View><Text style={styles.helper}>What would you say to a friend in this exact situation?</Text><TextInput style={styles.reframeInput} value={draft.perspective} onChangeText={(v) => update({ perspective: v })} editable={draftReady} maxLength={JOURNAL_FIELD_MAX} placeholder="Write a fairer, kinder response" placeholderTextColor="#a78bfa" multiline /></View>
     <Text style={styles.sectionTitle}>4. One small next step</Text><TextInput style={styles.shortInput} value={draft.nextStep} onChangeText={(v) => update({ nextStep: v })} editable={draftReady} maxLength={JOURNAL_FIELD_MAX} placeholder="Something realistic you can do next" placeholderTextColor="#64748b" />
@@ -217,6 +206,14 @@ export default function JournalScreen() {
               .filter(([, v]) => !!(v && String(v).trim()))
               .map(([label, value]) => <View key={label as string} style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><Text style={styles.fieldValue} selectable>{value}</Text></View>)}
           </ScrollView>
+          {open && brought === entryId(open) ? <View style={styles.broughtRow}><Icon name="checkmark-circle" size={18} color="#6ee7b7" /><Text style={styles.broughtText}>Added to your therapy plan</Text></View>
+            : <TouchableOpacity style={styles.bringButton} accessibilityRole="button" onPress={() => {
+              if (!open) return;
+              const parts = [open.situation || open.text, open.thought, open.feelings?.length ? `Feeling: ${open.feelings.join(', ')}` : ''].map((p) => (p ?? '').trim()).filter(Boolean);
+              setBrought(entryId(open));
+              setOpen(null);
+              navigation.navigate('TherapyCompanion', { bring: { id: entryId(open), text: `From my journal, ${open.date}: ${parts.join('. ')}` } });
+            }}><Icon name="people-outline" size={18} color="#93c5fd" /><Text style={styles.bringText}>Bring to my next session</Text></TouchableOpacity>}
           <TouchableOpacity style={styles.deleteButton} onPress={() => open && remove(open)} accessibilityRole="button"><Icon name="trash-outline" size={18} color="#fca5a5" /><Text style={styles.deleteText}>Delete reflection</Text></TouchableOpacity>
         </View>
       </View>
@@ -237,8 +234,8 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(2,6,23,0.75)', justifyContent: 'flex-end' }, modalCard: { backgroundColor: '#1e293b', borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, maxHeight: '88%', width: '100%', maxWidth: 720, alignSelf: 'center' },
   modalHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }, modalDate: { color: '#94a3b8', fontSize: 13, fontWeight: '700' }, entryFeelingsFull: { color: '#c4b5fd', fontSize: 13, marginBottom: 6 },
   field: { marginTop: 14 }, fieldLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' }, fieldValue: { color: '#f1f5f9', fontSize: 15, lineHeight: 22, marginTop: 6 },
-  checkIn: { backgroundColor: '#12372f', borderRadius: 17, padding: 16, marginBottom: 14 }, checkInLabel: { color: '#6ee7b7', fontSize: 11, fontWeight: '800', letterSpacing: 1 }, checkInStep: { color: '#f8fafc', fontSize: 16, lineHeight: 23, marginTop: 8 }, checkInQ: { color: '#a7f3d0', marginTop: 10 }, checkInRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  checkInYes: { backgroundColor: '#6ee7b7', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 9 }, checkInYesText: { color: '#052e2b', fontWeight: '800' }, checkInNo: { borderColor: '#6ee7b7', borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 9 }, checkInNoText: { color: '#a7f3d0', fontWeight: '700' }, checkInThanks: { color: '#a7f3d0', marginTop: 10, fontWeight: '600' },
   speakCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#24203f', borderColor: '#4c1d95', borderWidth: 1, borderRadius: 17, padding: 16, marginBottom: 14 }, speakIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#7c3aed', alignItems: 'center', justifyContent: 'center' }, speakTitle: { color: '#f8fafc', fontSize: 16, fontWeight: '700' }, speakText: { color: '#c4b5fd', fontSize: 12, lineHeight: 17, marginTop: 3 },
+  ownWords: { backgroundColor: '#24203f', borderRadius: 14, padding: 14, marginTop: 14 }, ownWordsLabel: { color: '#c4b5fd', fontSize: 11, fontWeight: '800', letterSpacing: 1 }, ownWordsIntro: { color: '#cbd5e1', marginTop: 8 }, ownWordsText: { color: '#f8fafc', fontSize: 15, lineHeight: 22, fontStyle: 'italic', marginTop: 6 }, ownWordsUse: { color: '#c4b5fd', fontWeight: '700', marginTop: 10 },
+  bringButton: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#1e3a8a', borderRadius: 22, paddingVertical: 12, marginTop: 12 }, bringText: { color: '#93c5fd', fontWeight: '700' }, broughtRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', paddingVertical: 12, marginTop: 12 }, broughtText: { color: '#a7f3d0', fontWeight: '700' },
   deleteButton: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#7f1d1d', borderRadius: 22, paddingVertical: 12, marginTop: 12 }, deleteText: { color: '#fca5a5', fontWeight: '700' },
 });
