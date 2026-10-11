@@ -5,6 +5,7 @@ import React from 'react';
 const SECTIONS = [
   ['Summary', 'Your moods, check-ins, journal, plans, habits, therapy notes and contacts are stored only on this device. The AI coach and accounts are optional. We do not sell your data, show ads, or use analytics or tracking.'],
   ['What stays on your device', 'Mood entries, check-ins, journal reflections, plans, habits, meditation progress, therapy companion notes, trusted contacts and settings are saved in this app’s private storage. We cannot access them. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.'],
+  ['Speaking a journal entry', 'If you choose Say it out loud in Journal, the microphone is used only while you speak. Your iPhone turns your speech into text on the device, using Apple’s on-device speech recognition. The recording is never saved, and neither the audio nor the text is sent to us, to the AI coach or to anyone else. If your iPhone can’t do this on the device for its language, voice entry stays off. While you speak or type, the text is checked on your phone for clear statements about self-harm, only to offer crisis support links; nothing is recorded, sent or shared because of this.'],
   ['Soundscapes and pause videos', 'The first time you play a soundscape or a short pause video, it is downloaded from our server and kept on your phone. Like any download, this shares your IP address with our hosting provider. We don\u2019t record what you play.'],
   ['Backups', 'Settings → Back up data saves a file that you choose where to keep; we never receive it. It contains your private notes, so keep it safe. Restore from backup merges or replaces data on this phone from a file you choose.'],
   ['Apple Health (optional)', 'If you connect Apple Health, the app reads your steps, walking distance and sleep to show them in History and on Home. It never writes to Apple Health. This data stays on your iPhone: it is never sent to our server, the AI coach or anyone else, and never used for advertising. Turn it off in Settings → Apple Health; remove access in iPhone Settings → Privacy & Security → Health → Wellbeing.'],
@@ -22,7 +23,7 @@ const SECTIONS = [
 
 export default function PrivacyScreen() {
   return <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.updated}>Last updated 9 October 2026</Text>
+    <Text style={styles.updated}>Last updated 11 October 2026</Text>
     {SECTIONS.map(([title, body]) => <React.Fragment key={title}><Text style={styles.heading}>{title}</Text><Text style={styles.body}>{body}</Text></React.Fragment>)}
   </ScrollView>;
 }

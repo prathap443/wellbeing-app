@@ -212,3 +212,22 @@ SOUNDSCAPES (new in 1.4): Home > Soundscapes. Eight original audio tracks owned 
 TEA RITUALS (new in 1.4): Home > Tea rituals. Eight common caffeine-free herbal teas presented as a guided mindfulness pause (brew timer and five reflective steps). Content is informational and conservative: no treatment or "clinically proven" claims, an honest evidence label on each tea, and specific cautions (allergies, pregnancy, medication). Herbs with known interaction risks for people taking mental-health medication (e.g. St John's wort, kava, valerian) are deliberately excluded. No products are sold or linked. Every tea's information and safety cautions can be read without subscribing; for six of the eight teas the guided ritual requires Wellbeing Plus.
 PLUS CONTENT: To review Plus content without purchasing, use the demo account below (Plus is granted in RevenueCat) or a sandbox purchase.
 ```
+
+## Version 1.5 – Speak your journal (TestFlight first; submit after 1.4 is approved)
+
+**What's New in This Version**
+
+```
+• Say it out loud: speak a journal entry and your iPhone turns it into text you can edit. The audio isn't kept and nothing leaves your phone
+• Then choose what helps: talk it through with a few gentle questions, take a short pause, or just save
+• Choose one manageable next step and add it to your planner if you like
+• Journal now asks how your last planned step went
+```
+
+**Add to the review notes**
+
+```
+SPEAK YOUR JOURNAL (new in 1.5): Home > Journal > "Say it out loud". Uses the microphone and Apple's speech recognition with on-device recognition required (requiresOnDeviceRecognition); if the device can't recognise on-device for its language, voice entry is disabled rather than using Apple's servers. Audio is not recorded or stored; the transcript is saved as an ordinary journal reflection on the device and is never sent to our server or the AI coach. After speaking, the user chooses "Talk it through" (up to three optional questions), "Take a short pause" (breathing, grounding or a pause video) or "Just save". If the text contains an explicit statement about self-harm, a support card offers the in-app crisis lines; this check runs on the device only and nothing is sent.
+```
+
+App Privacy answers do not change: no audio or transcript is collected (processing happens only on the device).

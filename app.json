@@ -2,7 +2,7 @@
   "expo": {
     "name": "Wellbeing",
     "slug": "wellbeing-app",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -38,6 +38,13 @@
     "plugins": [
       "expo-audio",
       "expo-video",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Wellbeing uses the microphone only while you speak a journal entry. The recording is not saved and never leaves your iPhone.",
+          "speechRecognitionPermission": "Wellbeing turns your spoken journal entries into text on your iPhone. What you say is not sent to Wellbeing or saved as audio."
+        }
+      ],
       [
         "expo-splash-screen",
         {

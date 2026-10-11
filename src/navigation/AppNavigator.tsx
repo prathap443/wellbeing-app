@@ -13,6 +13,7 @@ import InsightsScreen from '../screens/InsightsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import CheckInScreen from '../screens/CheckInScreen';
 import JournalScreen from '../screens/JournalScreen';
+import VoiceJournalScreen from '../screens/VoiceJournalScreen';
 import BreatheScreen from '../screens/BreatheScreen';
 import ResourcesScreen from '../screens/ResourcesScreen';
 import GroundingScreen from '../screens/GroundingScreen';
@@ -79,6 +80,7 @@ const HomeStack = () => (
     <Stack.Screen name="Home" component={HomeScreen} options={rootOptions} layout={rootLayout} />
     <Stack.Screen name="CheckIn" component={CheckInScreen} options={toolOptions('Check-in')} />
     <Stack.Screen name="Journal" component={JournalScreen} options={toolOptions('Journal')} />
+    <Stack.Screen name="VoiceJournal" component={VoiceJournalScreen} options={toolOptions('Speak')} />
     <Stack.Screen name="Breathe" component={BreatheScreen} options={toolOptions('Breathe')} />
     <Stack.Screen name="Resources" component={ResourcesScreen} options={toolOptions('Tools and support')} />
     <Stack.Screen name="Grounding" component={GroundingScreen} options={toolOptions('Grounding')} />

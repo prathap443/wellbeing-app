@@ -1,6 +1,6 @@
 # Wellbeing: Mood & Calm – Privacy Policy
 
-**Last updated: 9 October 2026**
+**Last updated: 11 October 2026**
 
 This policy explains what the Wellbeing app ("Wellbeing", "we") collects, why, and the choices you have. Wellbeing is provided by Prathap Adicherla, who is the data controller. Contact: [wellbeingsupport247@gmail.com](mailto:wellbeingsupport247@gmail.com).
 
@@ -14,6 +14,12 @@ This policy explains what the Wellbeing app ("Wellbeing", "we") collects, why, a
 ## What stays on your device
 
 Mood entries, daily check-ins, journal reflections, mental state plans, habits and goals, meditation progress, your activity history and "Did this help?" answers, therapy companion notes, trusted contacts and settings are saved in the app's private storage on your device. We have no access to them. If you turn on app lock, Face ID or your passcode is checked by your device; we never receive biometric data.
+
+## Speaking a journal entry
+
+If you choose **Say it out loud** in Journal, the microphone is used only while you are speaking. Your iPhone turns your speech into text **on the device**, using Apple's on-device speech recognition. The recording is never saved, and neither the audio nor the text is sent to us, to the AI coach or to anyone else. If your iPhone can't do this on the device for its language, voice entry stays off. The words you save become an ordinary journal reflection, stored only on your device.
+
+While you speak or type, the app checks the text on your phone for clear statements about self-harm, so it can offer crisis support links. Nothing is recorded, sent or shared because of this check.
 
 ## Soundscapes and short pause videos
 

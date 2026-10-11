@@ -1,6 +1,7 @@
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRoute } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 type PlannedTask = { id: string; title: string; effort: number; done: boolean };
@@ -14,7 +15,9 @@ const savedTime = (v: string) => (Number.isNaN(Date.parse(v)) ? v : new Date(v).
 export default function PlannerScreen() {
   const [capacity, setCapacity] = useState(3);
   const [tasks, setTasks] = useState<PlannedTask[]>([]);
-  const [taskTitle, setTaskTitle] = useState('');
+  // From a journal next step: pre-fill the box only. Nothing is added until the person taps +.
+  const prefill = ((useRoute<any>().params ?? {}) as { prefillTask?: string }).prefillTask;
+  const [taskTitle, setTaskTitle] = useState(prefill ? prefill.slice(0, 300) : '');
   const [effort, setEffort] = useState(1);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 

@@ -16,7 +16,17 @@ export type JournalEntry = {
   thought?: string;
   perspective?: string;
   nextStep?: string;
+  /** 'voice' when the reflection was spoken (the words only; audio is never kept). */
+  source?: 'voice';
+  /** Answer to "Did it happen?" for the next step, asked once on a later visit. */
+  nextStepStatus?: 'done' | 'not_yet' | 'dismissed';
+  nextStepCheckedAt?: string;
 };
+/** Feeling chips shared by the written and spoken journal. */
+export const JOURNAL_FEELINGS = ['Calm', 'Hopeful', 'Stressed', 'Low', 'Anxious', 'Frustrated'];
+/** Journal feeling -> the feeling used by "What helps me?" and the exercises, where one fits. */
+export const TOOL_FEELING: Record<string, 'stressed' | 'anxious' | 'low_energy'> = { Stressed: 'stressed', Frustrated: 'stressed', Anxious: 'anxious', Low: 'low_energy' };
+
 export type JournalDraft = { situation: string; thought: string; perspective: string; nextStep: string; feelings: string[] };
 export const EMPTY_DRAFT: JournalDraft = { situation: '', thought: '', perspective: '', nextStep: '', feelings: [] };
 
@@ -59,3 +69,21 @@ export const sameDraft = (a: JournalDraft, b: JournalDraft) =>
  */
 export const draftAfterSave = (current: JournalDraft, saved: JournalDraft): { draft: JournalDraft; newerKept: boolean } =>
   sameDraft(current, saved) ? { draft: EMPTY_DRAFT, newerKept: false } : { draft: current, newerKept: true };
+
+// ---------- Next-step check-in ----------
+/** Ask about a planned step from 4 hours to 14 days ago: soon enough to matter, late enough to have happened. */
+const CHECK_MIN_MS = 4 * 3600_000;
+const CHECK_MAX_MS = 14 * 86_400_000;
+
+/** The most recent reflection whose next step hasn't been asked about yet, or null. Only the newest step is ever asked. */
+export function pendingNextStep(entries: JournalEntry[], now = Date.now()): JournalEntry | null {
+  const latest = entries.find((e) => e.nextStep?.trim() && e.createdAt && !Number.isNaN(Date.parse(e.createdAt)));
+  if (!latest || latest.nextStepStatus) return null;
+  const age = now - Date.parse(latest.createdAt!);
+  return age >= CHECK_MIN_MS && age <= CHECK_MAX_MS ? latest : null;
+}
+
+/** Returns a new list with the answer recorded on that one reflection (nothing else changes). */
+export function withNextStepAnswer(entries: JournalEntry[], id: string, status: 'done' | 'not_yet' | 'dismissed', now = new Date()): JournalEntry[] {
+  return entries.map((e) => (entryId(e) === id ? { ...e, nextStepStatus: status, nextStepCheckedAt: now.toISOString() } : e));
+}

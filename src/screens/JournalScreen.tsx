@@ -1,9 +1,9 @@
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { EMPTY_DRAFT, JOURNAL_DRAFT_KEY, JOURNAL_DRAFT_UNREADABLE_KEY, JOURNAL_FIELD_MAX, draftAfterSave, entryId, entryTitle, loadJournal, newEntryId, saveJournal, type JournalDraft, type JournalEntry } from '../lib/journal';
+import { EMPTY_DRAFT, JOURNAL_FEELINGS, pendingNextStep, withNextStepAnswer, JOURNAL_DRAFT_KEY, JOURNAL_DRAFT_UNREADABLE_KEY, JOURNAL_FIELD_MAX, draftAfterSave, entryId, entryTitle, loadJournal, newEntryId, saveJournal, type JournalDraft, type JournalEntry } from '../lib/journal';
 
 const PROMPTS = [
   'What happened, without judging it?',
@@ -11,11 +11,13 @@ const PROMPTS = [
   'What would make today one percent easier?',
   'What is one thing you handled well?',
 ];
-const FEELINGS = ['Calm', 'Hopeful', 'Stressed', 'Low', 'Anxious', 'Frustrated'];
+const FEELINGS = JOURNAL_FEELINGS;
 const PAGE = 20;
 
 export default function JournalScreen() {
   const params = (useRoute<any>().params ?? {}) as { prefill?: string; openId?: string };
+  const navigation = useNavigation<any>();
+  const [checkIn, setCheckIn] = useState<{ id: string; step: string; answered?: 'done' | 'not_yet' } | null>(null);
   const [draft, setDraft] = useState<JournalDraft>(EMPTY_DRAFT);
   const draftRef = useRef(draft);
   draftRef.current = draft; // always the latest text, including anything typed during a save
@@ -46,6 +48,26 @@ export default function JournalScreen() {
     }
   }, []);
   useEffect(() => { loadEntries(); }, [loadEntries]);
+  // Spoken reflections are saved on their own screen: refresh the list when coming back (quietly, no spinner).
+  useEffect(() => navigation.addListener('focus', async () => {
+    const result = await loadJournal();
+    if (result.ok) { setEntries(result.entries); setLoad('ready'); }
+  }), [navigation]);
+  // "Last time you planned…": asked once per step, only after the reflections have loaded.
+  useEffect(() => {
+    if (load !== 'ready' || checkIn?.answered) return;
+    const p = pendingNextStep(entries);
+    setCheckIn(p ? { id: entryId(p), step: p.nextStep!.trim() } : null);
+  }, [entries, load]); // eslint-disable-line react-hooks/exhaustive-deps
+  const answerCheckIn = async (status: 'done' | 'not_yet' | 'dismissed') => {
+    if (!checkIn || load !== 'ready') return;
+    const next = withNextStepAnswer(entries, checkIn.id, status);
+    try {
+      await saveJournal(next);
+      setEntries(next);
+      setCheckIn(status === 'dismissed' ? null : { ...checkIn, answered: status });
+    } catch { Alert.alert('Not saved', 'Your answer could not be saved. Please try again.'); }
+  };
   useEffect(() => { if (params.openId && load === 'ready') { const f = entries.find((e) => entryId(e) === params.openId); if (f) setOpen(f); } }, [params.openId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Unfinished writing is autosaved, so leaving the screen never loses it.
@@ -136,6 +158,20 @@ export default function JournalScreen() {
 
   return <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
     <View style={styles.header}><Icon name="book-outline" size={30} color="#c4b5fd" /><Text style={styles.title}>Reflect with clarity</Text><Text style={styles.subtitle}>Name what is happening, create space around it, and choose one gentle next step.</Text></View>
+    {checkIn ? <View style={styles.checkIn}>
+      <View style={styles.promptTop}><Text style={styles.checkInLabel}>LAST TIME YOU PLANNED</Text>{!checkIn.answered ? <TouchableOpacity onPress={() => answerCheckIn('dismissed')} accessibilityLabel="Don't ask about this step"><Icon name="close" size={18} color="#64748b" /></TouchableOpacity> : null}</View>
+      <Text style={styles.checkInStep}>{checkIn.step}</Text>
+      {checkIn.answered ? <Text style={styles.checkInThanks}>{checkIn.answered === 'done' ? 'Well done for following through.' : "That's okay. It's still here if you want it."}</Text>
+        : <><Text style={styles.checkInQ}>Did it happen?</Text><View style={styles.checkInRow}>
+          <TouchableOpacity style={styles.checkInYes} onPress={() => answerCheckIn('done')} accessibilityRole="button"><Text style={styles.checkInYesText}>Yes, I did</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.checkInNo} onPress={() => answerCheckIn('not_yet')} accessibilityRole="button"><Text style={styles.checkInNoText}>Not yet</Text></TouchableOpacity>
+        </View></>}
+    </View> : null}
+    <TouchableOpacity style={styles.speakCard} onPress={() => navigation.navigate('VoiceJournal')} accessibilityRole="button" accessibilityLabel="Speak instead of typing">
+      <View style={styles.speakIcon}><Icon name="mic" size={22} color="#fff" /></View>
+      <View style={{ flex: 1 }}><Text style={styles.speakTitle}>Say it out loud</Text><Text style={styles.speakText}>Speak what's on your mind, then choose one helpful next step. Stays on your phone.</Text></View>
+      <Icon name="chevron-forward" size={18} color="#c4b5fd" />
+    </TouchableOpacity>
     <View style={styles.promptCard}><View style={styles.promptTop}><Text style={styles.promptLabel}>GUIDED REFLECTION</Text><TouchableOpacity onPress={() => setPromptIndex((promptIndex + 1) % PROMPTS.length)} accessibilityLabel="Another prompt"><Icon name="refresh-outline" size={19} color="#c4b5fd" /></TouchableOpacity></View><Text style={styles.prompt}>{PROMPTS[promptIndex]}</Text></View>
     <Text style={styles.sectionTitle}>1. What happened?</Text><TextInput style={styles.shortInput} value={draft.situation} onChangeText={(v) => update({ situation: v })} editable={draftReady} maxLength={JOURNAL_FIELD_MAX} placeholder="Describe the situation or moment" placeholderTextColor="#64748b" multiline />
     <Text style={styles.sectionTitle}>2. What are you feeling?</Text><View style={styles.feelings}>{FEELINGS.map((feeling) => <TouchableOpacity key={feeling} onPress={() => toggleFeeling(feeling)} style={[styles.feelingChip, draft.feelings.includes(feeling) && styles.feelingChipSelected]}><Text style={[styles.feelingText, draft.feelings.includes(feeling) && styles.feelingTextSelected]}>{feeling}</Text></TouchableOpacity>)}</View>
@@ -162,9 +198,9 @@ export default function JournalScreen() {
       : entries.length === 0 ? <Text style={styles.empty}>Your reflections will appear here.</Text>
       : <>
         {listed.map((entry) => <TouchableOpacity key={entryId(entry)} style={styles.entry} onPress={() => setOpen(entry)} accessibilityRole="button" accessibilityHint="Opens the full reflection">
-          <View style={styles.entryTop}><Text style={styles.entryDate}>{entry.date}</Text>{entry.feelings?.length ? <Text style={styles.entryFeelings}>{entry.feelings.join(' · ')}</Text> : null}</View>
+          <View style={styles.entryTop}><Text style={styles.entryDate}>{entry.date}{entry.source === 'voice' ? '  ·  Spoken' : ''}</Text>{entry.feelings?.length ? <Text style={styles.entryFeelings}>{entry.feelings.join(' · ')}</Text> : null}</View>
           <Text style={styles.entryText} numberOfLines={3}>{entryTitle(entry)}</Text>
-          {entry.nextStep ? <Text style={styles.entryStep}>Next: {entry.nextStep}</Text> : null}
+          {entry.nextStep ? <Text style={styles.entryStep}>Next: {entry.nextStep}{entry.nextStepStatus === 'done' ? '  ✓ done' : ''}</Text> : null}
           <Text style={styles.openLink}>Read in full ›</Text>
         </TouchableOpacity>)}
         {!showAll && entries.length > 5 ? <TouchableOpacity onPress={() => setShowAll(true)} style={styles.more}><Text style={styles.moreText}>Show all {entries.length} reflections</Text></TouchableOpacity> : null}
@@ -177,7 +213,7 @@ export default function JournalScreen() {
           <View style={styles.modalHead}><Text style={styles.modalDate}>{open?.date}</Text><TouchableOpacity onPress={() => setOpen(null)} accessibilityLabel="Close"><Icon name="close" size={24} color="#cbd5e1" /></TouchableOpacity></View>
           <ScrollView contentContainerStyle={{ paddingBottom: 12 }}>
             {open?.feelings?.length ? <Text style={styles.entryFeelingsFull}>{open.feelings.join(' · ')}</Text> : null}
-            {[['What happened', open?.situation || open?.text], ['What my mind was saying', open?.thought], ['A more balanced perspective', open?.perspective], ['My next step', open?.nextStep]]
+            {[['What happened', open?.situation || open?.text], ['What my mind was saying', open?.thought], ['A more balanced perspective', open?.perspective], ['My next step', open?.nextStep ? `${open.nextStep}${open.nextStepStatus === 'done' ? '\n✓ You did this' : open.nextStepStatus === 'not_yet' ? '\nNot done yet' : ''}` : undefined]]
               .filter(([, v]) => !!(v && String(v).trim()))
               .map(([label, value]) => <View key={label as string} style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><Text style={styles.fieldValue} selectable>{value}</Text></View>)}
           </ScrollView>
@@ -201,5 +237,8 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(2,6,23,0.75)', justifyContent: 'flex-end' }, modalCard: { backgroundColor: '#1e293b', borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, maxHeight: '88%', width: '100%', maxWidth: 720, alignSelf: 'center' },
   modalHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }, modalDate: { color: '#94a3b8', fontSize: 13, fontWeight: '700' }, entryFeelingsFull: { color: '#c4b5fd', fontSize: 13, marginBottom: 6 },
   field: { marginTop: 14 }, fieldLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' }, fieldValue: { color: '#f1f5f9', fontSize: 15, lineHeight: 22, marginTop: 6 },
+  checkIn: { backgroundColor: '#12372f', borderRadius: 17, padding: 16, marginBottom: 14 }, checkInLabel: { color: '#6ee7b7', fontSize: 11, fontWeight: '800', letterSpacing: 1 }, checkInStep: { color: '#f8fafc', fontSize: 16, lineHeight: 23, marginTop: 8 }, checkInQ: { color: '#a7f3d0', marginTop: 10 }, checkInRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  checkInYes: { backgroundColor: '#6ee7b7', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 9 }, checkInYesText: { color: '#052e2b', fontWeight: '800' }, checkInNo: { borderColor: '#6ee7b7', borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 9 }, checkInNoText: { color: '#a7f3d0', fontWeight: '700' }, checkInThanks: { color: '#a7f3d0', marginTop: 10, fontWeight: '600' },
+  speakCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#24203f', borderColor: '#4c1d95', borderWidth: 1, borderRadius: 17, padding: 16, marginBottom: 14 }, speakIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#7c3aed', alignItems: 'center', justifyContent: 'center' }, speakTitle: { color: '#f8fafc', fontSize: 16, fontWeight: '700' }, speakText: { color: '#c4b5fd', fontSize: 12, lineHeight: 17, marginTop: 3 },
   deleteButton: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#7f1d1d', borderRadius: 22, paddingVertical: 12, marginTop: 12 }, deleteText: { color: '#fca5a5', fontWeight: '700' },
 });
