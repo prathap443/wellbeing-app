@@ -224,6 +224,7 @@ PLUS CONTENT: To review Plus content without purchasing, use the demo account be
 • Your next step waits on Home until it's done, and you can make it smaller if it feels too big
 • Your own words: when a feeling comes back, see the kinder thing you told yourself last time
 • Bring a reflection to your next therapy session with one tap
+• Energy planner (was Mental state planner): your energy comes from today's check-in, a battery shows how full your day is, and too-full plans get gentle fixes: move to tomorrow, make it smaller or let it go
 • Habits, rebuilt: choose your own (or write one), each with a tiny version that counts on hard days. Some tick themselves when you breathe, meditate, journal or walk
 ```
 

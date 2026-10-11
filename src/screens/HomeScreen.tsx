@@ -292,8 +292,8 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('Planner')}>
             <Icon name="calendar-outline" size={22} color="#60a5fa" />
-            <Text style={styles.toolTitle}>Mental state planner</Text>
-            <Text style={styles.toolText}>Plan for your capacity</Text>
+            <Text style={styles.toolTitle}>Energy planner</Text>
+            <Text style={styles.toolText}>Match plans to your energy</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.toolCard} onPress={() => navigation.navigate('Meditation')}>
             <Icon name="headset-outline" size={22} color="#c4b5fd" />

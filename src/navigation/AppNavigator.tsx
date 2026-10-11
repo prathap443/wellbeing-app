@@ -88,7 +88,7 @@ const HomeStack = () => (
     <Stack.Screen name="SleepReset" component={SleepResetScreen} options={toolOptions('Sleep reset')} />
     <Stack.Screen name="SupportGuidance" component={SupportGuidanceScreen} options={toolOptions('Get help now')} />
     <Stack.Screen name="Goals" component={GoalsScreen} options={toolOptions('Habits and goals')} />
-    <Stack.Screen name="Planner" component={PlannerScreen} options={toolOptions('Planner')} />
+    <Stack.Screen name="Planner" component={PlannerScreen} options={toolOptions('Energy planner')} />
     <Stack.Screen name="Meditation" component={MeditationScreen} options={toolOptions('Meditation')} />
     <Stack.Screen name="TherapyCompanion" component={TherapyCompanionScreen} options={toolOptions('Therapy companion')} />
     <Stack.Screen name="AnxietySupport" component={AnxietySupportScreen} options={toolOptions('Anxiety support')} />

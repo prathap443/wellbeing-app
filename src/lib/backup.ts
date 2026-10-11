@@ -110,7 +110,7 @@ const RULES: Record<string, Rule> = {
     && ['text', 'situation', 'thought', 'perspective', 'nextStep'].some((k) => nonEmpty(r[k], 50_000)), 100_000),
   // updatedAt: ISO from v1.2 on; older plans saved a time only ("12:35"), which is still valid.
   mental_state_plans: list((r) => isPlainObject(r) && dateStr(r.date) && int(r.capacity, 1, 5) && (r.updatedAt === undefined || nonEmpty(r.updatedAt, 40))
-    && Array.isArray(r.tasks) && (r.tasks as any[]).every((t) => isPlainObject(t) && nonEmpty(t.id, 100) && nonEmpty(t.title, 300) && int(t.effort, 1, 3) && typeof t.done === 'boolean'), 60),
+    && Array.isArray(r.tasks) && (r.tasks as any[]).every((t) => isPlainObject(t) && nonEmpty(t.id, 100) && nonEmpty(t.title, 300) && int(t.effort, 1, 3) && typeof t.done === 'boolean'), 100_000),
   trusted_contacts: list((r) => nonEmpty(r, 200) || (isPlainObject(r) && nonEmpty(r.name, 200) && optStr(r.phone, 40)), 50),
   meditation_favourites: list((r) => MEDITATIONS.includes(r), 10),
   activity_log: (v) => {
